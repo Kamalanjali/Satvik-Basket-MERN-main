@@ -18,8 +18,8 @@ const orderSchema = new mongoose.Schema(
     totalAmount: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["CREATED", "PAID"],
-      default: "CREATED"
+      enum: ["PAID", "PENDING", "SHIPPED", "DELIVERED", "CANCELLED"],
+      default: "PENDING"
     }
   },
   { timestamps: true }

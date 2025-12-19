@@ -7,9 +7,22 @@ const paymentSchema = new mongoose.Schema(
       ref: "Order",
       required: true
     },
-    provider: { type: String, required: true },
-    providerPaymentId: String,
-    amount: Number,
+    provider: { 
+      type: String, 
+      required: true 
+    },
+    providerPaymentId: {
+      type:String,
+      default: null
+    },
+    amount:{
+      type: Number,
+      required: true
+    },
+    currency:{
+      type: String,
+      default: "INR"
+    },
     status: {
       type: String,
       enum: ["INITIATED", "SUCCESS", "FAILED"],
