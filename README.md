@@ -1,4 +1,4 @@
-### 🧺 Satvik Basket – MERN E-Commerce Backend
+# 🧺 Satvik Basket – MERN E-Commerce Backend
 
 Satvik Basket is a backend-first MERN e-commerce application designed for selling traditional, satvik home-made food products such as ghee, oils, spice mixes, and batters.
 This repository currently focuses on a robust, production-style backend with clean architecture, authentication, authorization, and core e-commerce flows.
@@ -9,14 +9,14 @@ Frontend integration is planned as the next phase.
 
 ## 🚀 Features Implemented (Backend)
 
-# 🔐 Authentication & Authorization
+### 🔐 Authentication & Authorization
 
 - User registration and login with JWT-based authentication
 - Role-based access control (USER, ADMIN)
 - Protected routes using middleware
 - Admin-only routes for product and order management
 
-# 🧱 Core E-Commerce Modules
+### 🧱 Core E-Commerce Modules
 
 - Users – register, login, role management
 - Products
@@ -34,7 +34,7 @@ Frontend integration is planned as the next phase.
 
 ---
 
-# 🛡️ Middleware & Infrastructure
+### 🛡️ Middleware & Infrastructure
 
 - Global error handling middleware
 - JWT auth middleware
@@ -45,7 +45,7 @@ Frontend integration is planned as the next phase.
 
 ---
 
-# 🧰 Tech Stack
+## 🧰 Tech Stack
 
 - Backend
 - Node.js
@@ -60,7 +60,7 @@ Frontend integration is planned as the next phase.
   
 ---
 
-# 📁 Project Structure
+## 📁 Project Structure
 
 backend/
 └── src/
