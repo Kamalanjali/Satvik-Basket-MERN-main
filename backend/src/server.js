@@ -24,6 +24,10 @@ app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 
+//error handler middleware
+import errorHandler from "./middleware/error.middleware.js";
+app.use(errorHandler);
+
 // Root Check
 app.get("/", (req, res) => {
   res.send("Server is running");
