@@ -21,7 +21,7 @@ app.use(express.json());
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
-  "https://your-frontend.vercel.app",
+  "https://satvikbasket.vercel.app",
 ];
 // Enable CORS
 app.use(
