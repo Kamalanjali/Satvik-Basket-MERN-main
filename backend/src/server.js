@@ -24,26 +24,18 @@ const allowedOrigins = [
   "https://satvikbasket.vercel.app",
 ];
 // Enable CORS
+
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow REST tools & server-side requests
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("CORS not allowed"), false);
-    },
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://satvikbasket.vercel.app",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
   })
 );
-
-app.options("*", cors()); // Enable pre-flight for all routes
-
 
 
 // Routes
