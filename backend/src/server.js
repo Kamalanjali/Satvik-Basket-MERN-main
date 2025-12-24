@@ -16,10 +16,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Enable CORS
-app.use(cors({
-  origin: ["*", "http://localhost:5173"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://satvikbasket.vercel.app",
+    ],
+    credentials: true,
+  })
+);
+
 
 // Middleware to parse JSON bodies
 app.use(express.json());
