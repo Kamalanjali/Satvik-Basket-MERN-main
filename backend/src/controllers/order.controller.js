@@ -1,5 +1,8 @@
+import mongoose from "mongoose";
 import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
+
+const TEMP_USER_ID = new mongoose.Types.ObjectId("64b000000000000000000001");
 
 // Controller to get all orders
 export const getAllOrders = async (req, res) => {
@@ -15,46 +18,26 @@ export const getAllOrders = async (req, res) => {
 // Controller to create a new order
 export const createOrder = async (req, res) => {
   try {
-    const userId = req.user._id; // from auth middleware
     const { items } = req.body;
 
     if (!items || items.length === 0) {
-      return res.status(400).json({ message: "Order items are required" });
-    }
-
-    let totalAmount = 0;
-
-    // Calculate total on backend
-    for (let item of items) {
-      const product = await Product.findById(item.productId);
-
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
-      }
-
-      totalAmount += product.price * item.quantity;
+      return res.status(400).json({ message: "Order items required" });
     }
 
     const order = await Order.create({
-      userId,
+      userId: null,
       items,
-      totalAmount,
-      status: "PENDING"
+      totalAmount: items[0].price * items[0].quantity,
+      status: "PENDING",
     });
 
-    res.status(201).json({
-      success: true,
-      order
-    });
-
+    res.status(201).json({ success: true, order });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };
+
+
 
 
 // Controller to get the logged-in user's past orders
@@ -70,4 +53,12 @@ export const getMyOrders = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Server Error", error: err.message });
   }
+};
+
+export const getLatestPendingOrder = async (req, res) => {
+  const order = await Order.findOne({ status: "PENDING" })
+    .sort({ createdAt: -1 })
+    .populate("items.productId", "name price");
+
+  res.json(order || { items: [], totalAmount: 0 });
 };

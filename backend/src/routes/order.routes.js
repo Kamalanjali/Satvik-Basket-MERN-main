@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getMyOrders } from "../controllers/order.controller.js";
+import { createOrder, getAllOrders, getMyOrders, getLatestPendingOrder } from "../controllers/order.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { adminOnly } from "../middleware/role.middleware.js";
 
@@ -9,9 +9,13 @@ const router = express.Router();
 router.get("/", protect, adminOnly, getAllOrders);
 
 // Route to create a new order
-router.post("/", protect, createOrder);
+router.post("/", createOrder);
 
 // Route to get the USER's past Orders
 router.get("/my-orders", protect, getMyOrders);
+
+// Route to get the latest pending order (cart) for the logged-in user
+router.get("/cart", getLatestPendingOrder);
+
 
 export default router;

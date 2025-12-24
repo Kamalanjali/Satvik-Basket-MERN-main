@@ -2,21 +2,22 @@ import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-// Controller to register a new user and hash their password
-
+// ===============================
+// Register User (AUTO-LOGIN ENABLED)
+// ===============================
 /**
  * @desc Register new user
  * @route POST /api/v1/auth/register
  */
-export const registerUser = async (req, res) => {
- try {
+export const registerUser = async (req, res, next) => {
+  try {
     const { name, email, password, role } = req.body;
 
     // 1. Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
-        success: false, 
+        success: false,
         message: "User already exists",
       });
     }
@@ -33,9 +34,21 @@ export const registerUser = async (req, res) => {
       role: role || "USER",
     });
 
+    // 4. Generate JWT token (AUTO LOGIN)
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 5. Send response
     res.status(201).json({
       success: true,
       message: "User registered successfully",
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -48,7 +61,9 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// Controller to login user and generate JWT token
+// ===============================
+// Login User
+// ===============================
 /**
  * @desc Login user & get token
  * @route POST /api/v1/auth/login
@@ -101,8 +116,9 @@ export const loginUser = async (req, res, next) => {
   }
 };
 
-// Controller to get logged in user's details and return them
-
+// ===============================
+// Get Logged-in User
+// ===============================
 /**
  * @route   GET /api/v1/auth/me
  * @access  Private
@@ -121,8 +137,9 @@ export const getMe = async (req, res) => {
   }
 };
 
-// Controller to logout user and invalidate token
-
+// ===============================
+// Logout User
+// ===============================
 /**
  * @route   POST /api/v1/auth/logout
  * @access  Private
