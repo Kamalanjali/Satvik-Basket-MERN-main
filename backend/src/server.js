@@ -15,13 +15,21 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://your-frontend.vercel.app",
+];
 // Enable CORS
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://satvikbasket.vercel.app",
-    ],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow server-to-server
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
