@@ -15,6 +15,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware to parse JSON bodies
+app.use(express.json());
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
@@ -24,19 +27,24 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow server-to-server
+      // allow REST tools & server-side requests
+      if (!origin) return callback(null, true);
+
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      callback(new Error("Not allowed by CORS"));
+
+      return callback(new Error("CORS not allowed"), false);
     },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
+app.options("*", cors()); // Enable pre-flight for all routes
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+
 
 // Routes
 app.use("/api/v1/auth", authRoutes);
