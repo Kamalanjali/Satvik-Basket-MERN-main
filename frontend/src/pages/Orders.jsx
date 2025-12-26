@@ -8,6 +8,10 @@ const paymentStatusUI = {
     label: "Payment Successful",
     color: "text-green-600",
   },
+  SUCCESS: {
+    label: "Payment Successful",
+    color: "text-green-600",
+  },
   PENDING: {
     label: "Awaiting Payment",
     color: "text-yellow-600",
@@ -18,46 +22,49 @@ const paymentStatusUI = {
   },
 };
 
+
+
 function Orders() {
   const [orders, setOrders] = useState([]);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [payingOrderId, setPayingOrderId] = useState(null);
 
+  /* ================= Fetch Orders ================= */
   const fetchOrders = async () => {
-    const res = await orderApi.getMyOrders();
-    setOrders(res.data.orders || []);
+    try {
+      const res = await orderApi.getMyOrders();
+      setOrders(res.data.orders || []);
+    } catch (err) {
+      console.error("Failed to fetch orders", err);
+    }
   };
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
+  /* ================= UI helpers ================= */
   const toggleExpand = (orderId) => {
-    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
+    if (payingOrderId) return;
+    setExpandedOrderId((prev) => (prev === orderId ? null : orderId));
   };
 
+  /* ================= Pay Now ================= */
   const handlePayNow = async (orderId) => {
-    try {
-      setPayingOrderId(orderId);
+    setPayingOrderId(orderId);
 
-      await openRazorpayCheckout({
-        orderId,
-        onSuccess: async () => {
-          await fetchOrders();
-          setPayingOrderId(null);
-        },
-        onClose: () => {
-          setPayingOrderId(null);
-        },
+    await openRazorpayCheckout({
+      orderId,
 
-        onFailure: () => {
-          setPayingOrderId(null);
-        },
-      });
-    } catch (err) {
-      console.error("Payment retry failed", err);
-      setPayingOrderId(null);
-    }
+      onSuccess: async () => {
+        await fetchOrders();
+        setPayingOrderId(null);
+      },
+
+      onFailure: () => {
+        setPayingOrderId(null);
+      },
+    });
   };
 
   return (
@@ -70,26 +77,24 @@ function Orders() {
         {orders.map((order) => {
           const shortOrderId = order._id.slice(-6).toUpperCase();
           const orderDate = new Date(order.createdAt).toLocaleString();
-          const isPending = order.paymentStatus === "PENDING";
-          const statusMeta = paymentStatusUI[order.paymentStatus];
+
+          // ✅ SINGLE SOURCE OF TRUTH
+          const isPaid = order.paymentStatus === "PAID";
+          const isPaying = payingOrderId === order._id;
+          const statusMeta =
+            paymentStatusUI[order.paymentStatus] || paymentStatusUI.PENDING;
 
           return (
             <div
               key={order._id}
               className={`mb-4 rounded-lg bg-white border border-[#e6d9c8] shadow-sm
-                ${
-                  payingOrderId === order._id
-                    ? "opacity-70 pointer-events-none"
-                    : ""
-                }
-                `}
+                ${isPaying ? "opacity-70 pointer-events-none" : ""}
+              `}
             >
               {/* ===== Order summary ===== */}
               <div
                 className="flex justify-between items-start p-4 cursor-pointer"
-                onClick={() => {
-                  if (!payingOrderId) toggleExpand(order._id);
-                }}
+                onClick={() => toggleExpand(order._id)}
               >
                 {/* Left */}
                 <div>
@@ -105,9 +110,9 @@ function Orders() {
                     ₹{order.totalAmount}
                   </p>
                   <p
-                    className={`mt-1 text-xs font-semibold ${statusMeta?.color}`}
+                    className={`mt-1 text-xs font-semibold ${statusMeta.color}`}
                   >
-                    {statusMeta?.label || order.paymentStatus}
+                    {statusMeta.label}
                   </p>
                 </div>
               </div>
@@ -126,9 +131,7 @@ function Orders() {
                         <span>
                           {item.name || "Item"} × {item.quantity}
                         </span>
-                        {item.price && (
-                          <span>₹{item.price * item.quantity}</span>
-                        )}
+                        <span>₹{item.price * item.quantity}</span>
                       </div>
                     ))}
                   </div>
@@ -142,12 +145,6 @@ function Orders() {
                           {order.shippingAddress.fullName}
                         </span>
                         <br />
-                        {order.shippingAddress.email && (
-                          <>
-                            {order.shippingAddress.email}
-                            <br />
-                          </>
-                        )}
                         {order.shippingAddress.phone}
                         <br />
                         {order.shippingAddress.addressLine1}
@@ -159,22 +156,24 @@ function Orders() {
                     </div>
                   )}
 
-                  {/* ===== Pay Now (only if pending) ===== */}
-                  {isPending && (
+                  {/* ===== Payment Action ===== */}
+                  {!isPaid ? (
                     <button
                       onClick={() => handlePayNow(order._id)}
-                      disabled={payingOrderId === order._id}
+                      disabled={isPaying}
                       className={`mt-2 rounded px-4 py-2 text-sm font-semibold
                         ${
-                          payingOrderId === order._id
+                          isPaying
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : "bg-green-700 text-white hover:bg-green-800"
                         }`}
                     >
-                      {payingOrderId === order._id
-                        ? "Processing..."
-                        : "Pay Now"}
+                      {isPaying ? "Processing..." : "Pay Now"}
                     </button>
+                  ) : (
+                    <span className="mt-2 inline-block text-sm font-semibold text-green-700">
+                      ✅ Payment Completed
+                    </span>
                   )}
                 </div>
               )}

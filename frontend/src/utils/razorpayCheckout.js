@@ -2,11 +2,14 @@ import { api } from "../services/api";
 import toast from "react-hot-toast";
 
 /**
- * Load Razorpay SDK
+ * Load Razorpay SDK safely (once)
  */
 export const loadRazorpayScript = () => {
   return new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -18,7 +21,11 @@ export const loadRazorpayScript = () => {
 };
 
 /**
- * Open Razorpay Checkout (Safe + Idempotent)
+ * Open Razorpay Checkout
+ * Fully guarded against:
+ * - multiple popups
+ * - double success
+ * - cancel → success bug
  */
 export const openRazorpayCheckout = async ({
   orderId,
@@ -27,21 +34,28 @@ export const openRazorpayCheckout = async ({
 }) => {
   let finalized = false;
 
-  const failSafely = (message) => {
+  const finishFailure = (message) => {
     if (finalized) return;
     finalized = true;
     toast.error(message);
     onFailure?.();
   };
 
+  const finishSuccess = () => {
+    if (finalized) return;
+    finalized = true;
+    toast.success("Payment successful 🎉 Order confirmed");
+    onSuccess?.();
+  };
+
   const loaded = await loadRazorpayScript();
   if (!loaded) {
-    failSafely("Unable to load payment system");
+    finishFailure("Unable to load payment gateway");
     return;
   }
 
   try {
-    // 🔐 Backend creates Razorpay order
+    // 1️⃣ Ask backend to create Razorpay order
     const { data } = await api.post("/payments/razorpay/create", { orderId });
 
     const { razorpayOrder, paymentId } = data;
@@ -51,9 +65,13 @@ export const openRazorpayCheckout = async ({
       amount: razorpayOrder.amount,
       currency: "INR",
       name: "Satvik Basket",
-      description: "Order Payment",
+      description: "Secure Order Payment",
       order_id: razorpayOrder.id,
 
+      /**
+       * 2️⃣ Called ONLY when Razorpay thinks payment succeeded
+       * Still NOT trusted → backend verification mandatory
+       */
       handler: async (response) => {
         try {
           await api.post("/payments/razorpay/verify", {
@@ -63,36 +81,45 @@ export const openRazorpayCheckout = async ({
             paymentId,
           });
 
-          if (finalized) return;
-          finalized = true;
+          finishSuccess();
+        } catch (err) {
+          console.error("Verification failed:", err);
 
-          toast.success("Payment successful 🎉 Order confirmed");
-          onSuccess?.();
-        } catch {
-          failSafely(
-            "Payment received but verification failed. Support will contact you."
+          toast(
+            "Payment received, but verification pending. Please check Orders.",
+            { icon: "⏳" }
           );
+
+          finishFailure("");
         }
       },
 
+      /**
+       * 3️⃣ User closes Razorpay modal
+       */
       modal: {
         ondismiss: () => {
-          failSafely("Payment cancelled. You can retry anytime.");
+          finishFailure("Payment cancelled. You can retry anytime.");
         },
       },
 
-      theme: { color: "#4CAF50" },
+      theme: {
+        color: "#4CAF50",
+      },
     };
 
     const rzp = new window.Razorpay(options);
 
+    /**
+     * 4️⃣ Explicit Razorpay failure event
+     */
     rzp.on("payment.failed", () => {
-      failSafely("Payment failed. Please try again.");
+      finishFailure("Payment failed. Please try again.");
     });
 
     rzp.open();
   } catch (error) {
-    console.error("Razorpay error:", error);
-    failSafely("Unable to initiate payment");
+    console.error("Payment init error:", error);
+    finishFailure("Unable to initiate payment");
   }
 };
