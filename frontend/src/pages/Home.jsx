@@ -8,6 +8,8 @@ import ProductModal from "../components/ProductModal";
 function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -18,15 +20,23 @@ function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
       try {
         setLoading(true);
         setError(null);
+
         const response = await productApi.getAll();
         const data = response.data?.products || response.data || [];
+
         setProducts(data);
-        setFilteredProducts(data);
+
+        // derive categories dynamically
+        const uniqueCategories = [
+          "All",
+          ...new Set(data.map((p) => p.category).filter(Boolean)),
+        ];
+        setCategories(uniqueCategories);
       } catch (err) {
         console.error("Error fetching products:", err);
         setError("Failed to load products");
         setProducts([]);
-        setFilteredProducts([]);
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -35,25 +45,32 @@ function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
     fetchProducts();
   }, []);
 
-  /* ---------------- SEARCH FILTER ---------------- */
+  /* ---------------- CATEGORY + SEARCH FILTER ---------------- */
   useEffect(() => {
-    if (!searchQuery?.trim()) {
-      setFilteredProducts(products);
-    } else {
-      const query = searchQuery.toLowerCase();
-      setFilteredProducts(
-        products.filter(
-          (product) =>
-            product.name?.toLowerCase().includes(query) ||
-            product.description?.toLowerCase().includes(query)
-        )
+    let updated = products;
+
+    // category filter
+    if (selectedCategory !== "All") {
+      updated = updated.filter(
+        (product) => product.category === selectedCategory
       );
     }
-  }, [searchQuery, products]);
+
+    // search filter
+    if (searchQuery?.trim()) {
+      const query = searchQuery.toLowerCase();
+      updated = updated.filter(
+        (product) =>
+          product.name?.toLowerCase().includes(query) ||
+          product.description?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredProducts(updated);
+  }, [products, searchQuery, selectedCategory]);
 
   /* ---------------- CART LOGIC (SINGLE SOURCE) ---------------- */
 
-  // Add or increase quantity
   const handleAddToCart = useCallback(
     (product) => {
       setCartItems((prev) => {
@@ -75,7 +92,6 @@ function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
     [setCartItems]
   );
 
-  // Increase quantity
   const increaseQty = useCallback(
     (productId) => {
       setCartItems((prev) =>
@@ -89,7 +105,6 @@ function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
     [setCartItems]
   );
 
-  // Decrease quantity (remove if 0)
   const decreaseQty = useCallback(
     (productId) => {
       setCartItems((prev) =>
@@ -105,7 +120,6 @@ function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
     [setCartItems]
   );
 
-  // Remove item completely
   const handleRemoveItem = useCallback(
     (productId) => {
       setCartItems((prev) =>
@@ -147,6 +161,24 @@ function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
           <p className="text-[#6b4f3f]">
             Explore our collection of traditional homemade essentials
           </p>
+        </div>
+
+        {/* ---------------- CATEGORY TABS ---------------- */}
+        <div className="mb-8 flex gap-3 overflow-x-auto pb-2 sm:flex-wrap">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition
+                ${
+                  selectedCategory === category
+                    ? "bg-green-700 text-white"
+                    : "bg-[#f5efe6] text-[#6b4f3f] hover:bg-[#e6d9c8]"
+                }`}
+            >
+              {category}
+            </button>
+          ))}
         </div>
 
         <ProductGrid
