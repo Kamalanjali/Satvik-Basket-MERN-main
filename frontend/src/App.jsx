@@ -29,7 +29,11 @@ function App() {
   );
 
   return (
-    <BrowserRouter>
+    <BrowserRouter
+    future={{
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  }}>
       <Header
         onSearch={handleSearch}
         cartItemCount={cartItemCount}
@@ -55,7 +59,7 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/addresses" element={<Addresses />} />
-        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout" element={<Checkout cartItems={cartItems} setCartItems={setCartItems} />} />
       </Routes>
     </BrowserRouter>
   );

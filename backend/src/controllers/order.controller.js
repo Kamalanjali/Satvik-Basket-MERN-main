@@ -18,24 +18,60 @@ export const getAllOrders = async (req, res) => {
 // Controller to create a new order
 export const createOrder = async (req, res) => {
   try {
-    const { items } = req.body;
+    const { items, totalAmount, address } = req.body;
 
+    // Basic validation
     if (!items || items.length === 0) {
-      return res.status(400).json({ message: "Order items required" });
+      return res.status(400).json({
+        success: false,
+        message: "Order must contain items",
+      });
+    }
+
+    if (!totalAmount) {
+      return res.status(400).json({
+        success: false,
+        message: "Total amount is required",
+      });
+    }
+
+    if (
+      !address ||
+      !address.name ||
+      !address.phone ||
+      !address.street ||
+      !address.city ||
+      !address.state ||
+      !address.pincode
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Complete delivery address is required",
+      });
     }
 
     const order = await Order.create({
-      userId: null,
       items,
-      totalAmount: items[0].price * items[0].quantity,
-      status: "PENDING",
+      totalAmount,
+      address,
+      // userId intentionally optional (guest checkout)
     });
 
-    res.status(201).json({ success: true, order });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(201).json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    console.error("❌ Create order error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while creating order",
+    });
   }
 };
+
+
 
 
 
