@@ -39,3 +39,37 @@ export const createProduct = async (req, res) => {
     });
   }
 };
+
+// Controller to update product image
+export const updateProductImageUrl = async (req, res) => {
+  const { imageUrl } = req.body;
+
+  if (!imageUrl) {
+    return res.status(400).json({
+      success: false,
+      message: "imageUrl is required",
+    });
+  }
+
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
+  }
+
+  product.imageUrl = imageUrl;
+  await product.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Image URL updated successfully",
+    imageUrl: product.imageUrl,
+  });
+};
+
+
+
+

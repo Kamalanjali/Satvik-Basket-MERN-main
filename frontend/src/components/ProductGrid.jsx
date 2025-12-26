@@ -1,7 +1,16 @@
 import ProductCard from "./ProductCard";
 import { Loader2 } from "lucide-react";
 
-function ProductGrid({ products, loading, error, onAddToCart }) {
+function ProductGrid({
+  products,
+  loading,
+  error,
+  cartItems,
+  onAddToCart,
+  onIncrease,
+  onDecrease,
+  onProductClick,
+}) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -19,9 +28,7 @@ function ProductGrid({ products, loading, error, onAddToCart }) {
         <p className="mb-2 text-lg font-semibold text-[#8b3a3a]">
           Failed to load products
         </p>
-        <p className="text-sm text-[#6b4f3f]">
-          {error}
-        </p>
+        <p className="text-sm text-[#6b4f3f]">{error}</p>
       </div>
     );
   }
@@ -29,9 +36,7 @@ function ProductGrid({ products, loading, error, onAddToCart }) {
   if (!products || products.length === 0) {
     return (
       <div className="py-24 text-center">
-        <p className="text-lg text-[#6b4f3f]">
-          No products found
-        </p>
+        <p className="text-lg text-[#6b4f3f]">No products found</p>
         <p className="mt-1 text-sm text-[#8b6f55]">
           Try adjusting your search or check back later
         </p>
@@ -45,7 +50,11 @@ function ProductGrid({ products, loading, error, onAddToCart }) {
         <ProductCard
           key={product._id || product.id}
           product={product}
+          cartItems={cartItems}
           onAddToCart={onAddToCart}
+          onIncrease={onIncrease}
+          onDecrease={onDecrease}
+          onClick={() => onProductClick(product)}
         />
       ))}
     </div>

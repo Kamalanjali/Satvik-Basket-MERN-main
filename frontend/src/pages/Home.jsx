@@ -3,20 +3,16 @@ import ProductGrid from "../components/ProductGrid";
 import Cart from "../components/Cart";
 import Footer from "../components/Footer";
 import { productApi } from "../services/api";
+import ProductModal from "../components/ProductModal";
 
-function Home({
-  searchQuery,
-  cartItems,
-  setCartItems,
-  cartOpen,
-  setCartOpen,
-}) {
+function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // Fetch products
+  /* ---------------- FETCH PRODUCTS ---------------- */
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -39,9 +35,9 @@ function Home({
     fetchProducts();
   }, []);
 
-  // Filter products by search
+  /* ---------------- SEARCH FILTER ---------------- */
   useEffect(() => {
-    if (!searchQuery || !searchQuery.trim()) {
+    if (!searchQuery?.trim()) {
       setFilteredProducts(products);
     } else {
       const query = searchQuery.toLowerCase();
@@ -55,52 +51,73 @@ function Home({
     }
   }, [searchQuery, products]);
 
-  // Add to cart
-  const handleAddToCart = useCallback((product) => {
-    setCartItems((prev) => {
-      const existing = prev.find(
-        (item) => (item._id || item.id) === (product._id || product.id)
-      );
+  /* ---------------- CART LOGIC (SINGLE SOURCE) ---------------- */
 
-      if (existing) {
-        return prev.map((item) =>
-          (item._id || item.id) === (product._id || product.id)
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+  // Add or increase quantity
+  const handleAddToCart = useCallback(
+    (product) => {
+      setCartItems((prev) => {
+        const existing = prev.find(
+          (item) => (item._id || item.id) === (product._id || product.id)
         );
-      }
 
-      return [...prev, { ...product, quantity: 1 }];
-    });
-  }, [setCartItems]);
+        if (existing) {
+          return prev.map((item) =>
+            (item._id || item.id) === (product._id || product.id)
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+        }
 
-  // Update quantity
-  const handleUpdateQuantity = useCallback((productId, newQuantity) => {
-    if (newQuantity < 1) {
-      setCartItems((prev) =>
-        prev.filter((item) => (item._id || item.id) !== productId)
-      );
-    } else {
+        return [...prev, { ...product, quantity: 1 }];
+      });
+    },
+    [setCartItems]
+  );
+
+  // Increase quantity
+  const increaseQty = useCallback(
+    (productId) => {
       setCartItems((prev) =>
         prev.map((item) =>
           (item._id || item.id) === productId
-            ? { ...item, quantity: newQuantity }
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       );
-    }
-  }, [setCartItems]);
+    },
+    [setCartItems]
+  );
 
-  // Remove item
-  const handleRemoveItem = useCallback((productId) => {
-    setCartItems((prev) =>
-      prev.filter((item) => (item._id || item.id) !== productId)
-    );
-  }, [setCartItems]);
+  // Decrease quantity (remove if 0)
+  const decreaseQty = useCallback(
+    (productId) => {
+      setCartItems((prev) =>
+        prev
+          .map((item) =>
+            (item._id || item.id) === productId
+              ? { ...item, quantity: item.quantity - 1 }
+              : item
+          )
+          .filter((item) => item.quantity > 0)
+      );
+    },
+    [setCartItems]
+  );
+
+  // Remove item completely
+  const handleRemoveItem = useCallback(
+    (productId) => {
+      setCartItems((prev) =>
+        prev.filter((item) => (item._id || item.id) !== productId)
+      );
+    },
+    [setCartItems]
+  );
 
   return (
     <div className="min-h-screen bg-[#fdf9f3]">
-      {/* Hero Section */}
+      {/* ---------------- HERO ---------------- */}
       <section className="bg-[#f5efe6] py-20 text-center">
         <div className="max-w-3xl mx-auto px-4">
           <span className="inline-block mb-6 rounded-full bg-green-700 px-6 py-2 text-sm font-semibold text-white shadow">
@@ -113,9 +130,6 @@ function Home({
 
           <p className="mb-6 text-lg leading-relaxed text-[#6b4f3f]">
             Bringing the essence of traditional Indian kitchens to your home.
-            Our handcrafted ghee, cold-pressed oils, artisanal spice blends, and
-            fresh batters are made with time-honored recipes passed down through
-            generations.
           </p>
 
           <p className="italic text-[#8b6f55]">
@@ -124,7 +138,7 @@ function Home({
         </div>
       </section>
 
-      {/* Products */}
+      {/* ---------------- PRODUCTS ---------------- */}
       <main className="max-w-7xl mx-auto px-4 py-16">
         <div className="mb-10">
           <h2 className="mb-2 text-3xl font-serif font-bold text-[#2f241c]">
@@ -139,17 +153,36 @@ function Home({
           products={filteredProducts}
           loading={loading}
           error={error}
+          cartItems={cartItems}
           onAddToCart={handleAddToCart}
+          onIncrease={increaseQty}
+          onDecrease={decreaseQty}
+          onProductClick={setSelectedProduct}
         />
+
+        {/* ---------------- MODAL ---------------- */}
+        {selectedProduct && (
+          <ProductModal
+            product={selectedProduct}
+            cartItems={cartItems}
+            onAddToCart={handleAddToCart}
+            onIncrease={increaseQty}
+            onDecrease={decreaseQty}
+            onClose={() => setSelectedProduct(null)}
+          />
+        )}
       </main>
 
       <Footer />
 
+      {/* ---------------- CART DRAWER ---------------- */}
       <Cart
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
+        onUpdateQuantity={(id, qty) =>
+          qty > 0 ? increaseQty(id) : decreaseQty(id)
+        }
         onRemoveItem={handleRemoveItem}
       />
     </div>
