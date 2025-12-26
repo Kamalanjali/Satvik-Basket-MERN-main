@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import addressRoutes from  "./routes/address.routes.js";
 
 dotenv.config();
 
@@ -44,6 +45,8 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/addresses", addressRoutes);
+
 
 //error handler middleware
 import errorHandler from "./middleware/error.middleware.js";

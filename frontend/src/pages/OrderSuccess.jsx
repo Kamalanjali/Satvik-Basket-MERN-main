@@ -1,49 +1,40 @@
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function OrderSuccess() {
   const navigate = useNavigate();
-  const { state } = useLocation();
+  const location = useLocation();
 
-  if (!state?.orderId) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (!location.state) {
+      navigate("/", { replace: true });
+    }
+  }, [location.state, navigate]);
+
+  if (!location.state) return null; // prevent flicker
+
+  const { orderId, totalAmount } = location.state;
 
   return (
-    <div className="min-h-screen bg-[#fdf9f3] flex items-center justify-center">
-      <div className="max-w-lg rounded-lg bg-white p-10 text-center shadow">
-        <h1 className="mb-4 text-3xl font-serif font-bold text-green-700">
-          Order Placed Successfully 🎉
-        </h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdf9f3] text-center px-4">
+      <h1 className="text-2xl md:text-3xl font-serif font-bold text-green-800 mb-4">
+        Order Placed Successfully 🎉
+      </h1>
 
-        <p className="mb-2 text-[#6b4f3f]">
-          Thank you for shopping with Satvik Basket.
-        </p>
+      <p className="mb-2 text-[#2f241c]">
+        Order ID: <strong>{orderId}</strong>
+      </p>
 
-        <p className="mb-6 text-sm text-[#8b6f55]">
-          Order ID: <span className="font-medium">{state.orderId}</span>
-        </p>
+      <p className="mb-6 text-[#2f241c]">
+        Total Paid: <strong>₹{totalAmount}</strong>
+      </p>
 
-        <p className="mb-8 text-xl font-bold text-[#2f241c]">
-          Total: ₹{state.totalAmount}
-        </p>
-
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={() => navigate("/orders")}
-            className="rounded bg-green-700 py-3 text-white hover:bg-green-800 transition"
-          >
-            View My Orders
-          </button>
-
-          <button
-            onClick={() => navigate("/")}
-            className="rounded border py-3 text-[#2f241c] hover:bg-[#f5efe6] transition"
-          >
-            Continue Shopping
-          </button>
-        </div>
-      </div>
+      <button
+        onClick={() => navigate("/orders")}
+        className="rounded bg-green-700 px-6 py-3 text-white hover:bg-green-800"
+      >
+        View My Orders
+      </button>
     </div>
   );
 }

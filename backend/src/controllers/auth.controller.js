@@ -72,8 +72,19 @@ export const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Check if user exists
-    const user = await User.findOne({ email });
+    // 1. Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    // 2. Find user with password
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    }).select("+password");
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -81,7 +92,7 @@ export const loginUser = async (req, res, next) => {
       });
     }
 
-    // 2. Compare password
+    // 3. Compare password
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
       return res.status(401).json({
@@ -90,12 +101,9 @@ export const loginUser = async (req, res, next) => {
       });
     }
 
-    // 3. Generate JWT token
+    // 4. Generate JWT
     const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-      },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );

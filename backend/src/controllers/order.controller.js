@@ -1,4 +1,5 @@
 import Order from "../models/order.model.js";
+import User from "../models/user.model.js";
 
 /* ======================================
    ADMIN: Get all orders
@@ -26,53 +27,51 @@ export const getAllOrders = async (req, res) => {
 /* ======================================
    CREATE ORDER (Guest or Logged-in)
 ====================================== */
-export const createOrder = async (req, res) => {
+export const createOrder = async (req, res, next) => {
   try {
-    const { items, totalAmount, address } = req.body;
+    const { addressId, orderItems, paymentMethod, totalAmount } = req.body;
 
-    if (!items || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Order must contain items",
-      });
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    if (
-      !address ||
-      !address.name ||
-      !address.phone ||
-      !address.street ||
-      !address.city ||
-      !address.state ||
-      !address.pincode
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Complete delivery address is required",
-      });
+    const selectedAddress = user.addresses.id(addressId);
+    if (!selectedAddress) {
+      return res.status(404).json({ message: "Address not found" });
     }
 
     const order = await Order.create({
-      userId: req.user.id,                 // ✅ always present
-      items,
-      totalAmount,
-      address: {
-        ...address,
-        email: req.user.email,             // ✅ inject here
+      user: req.user._id,
+
+      orderItems: orderItems.map((item) => ({
+        product: item.product,   // ObjectId
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+
+      shippingAddress: {
+        fullName: selectedAddress.fullName,
+        phone: selectedAddress.phone,
+        addressLine1: selectedAddress.addressLine1,
+        addressLine2: selectedAddress.addressLine2,
+        city: selectedAddress.city,
+        state: selectedAddress.state,
+        pincode: selectedAddress.pincode,
+        country: selectedAddress.country,
       },
-      status: "PENDING",
+
+      totalAmount,
+      paymentMethod,
+      paymentStatus: "PENDING",
+      orderStatus: "CREATED",
     });
 
-    return res.status(201).json({
-      success: true,
-      order,
-    });
+    res.status(201).json({ success: true, order });
   } catch (error) {
-    console.error("❌ Create order error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to create order",
-    });
+    console.error("❌ CREATE ORDER ERROR:", error);
+    next(error);
   }
 };
 
@@ -82,8 +81,9 @@ export const createOrder = async (req, res) => {
 ====================================== */
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user.id })
-      .sort({ createdAt: -1 });
+    const orders = await Order.find({
+      user: req.user._id, // MUST be _id (ObjectId)
+    }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
