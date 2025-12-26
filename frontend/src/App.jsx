@@ -9,6 +9,7 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import Addresses from "./pages/Addresses";
 import Checkout from "./pages/Checkout";
+import OrderSuccess from "./pages/OrderSuccess";
 
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,6 +61,7 @@ function App() {
         <Route path="/orders" element={<Orders />} />
         <Route path="/addresses" element={<Addresses />} />
         <Route path="/checkout" element={<Checkout cartItems={cartItems} setCartItems={setCartItems} />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
       </Routes>
     </BrowserRouter>
   );

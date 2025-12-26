@@ -50,7 +50,7 @@ function Checkout({ cartItems, setCartItems }) {
     try {
       setSubmitting(true);
 
-      await orderApi.create({
+      const response = await orderApi.create({
         items: cartItems.map((item) => ({
           productId: item._id || item.id,
           name: item.name,
@@ -61,11 +61,19 @@ function Checkout({ cartItems, setCartItems }) {
         address,
       });
 
+      //save address locally ( for reuse)
+      localStorage.setItem("savedAddress", JSON.stringify(address));
+
       // Clear cart
       setCartItems([]);
 
-      alert("Order placed successfully!");
-      navigate("/");
+      // Navigate to order success page
+      navigate("/order-success", {
+        state: {
+          orderId: response.data.order._id,
+          totalAmount,
+        },
+      });
     } catch (error) {
       console.error("Order creation failed:", error);
       alert("Failed to place order. Please try again.");
@@ -89,9 +97,7 @@ function Checkout({ cartItems, setCartItems }) {
               className="flex items-center justify-between border-b py-4 last:border-b-0"
             >
               <div>
-                <h3 className="font-medium text-[#2f241c]">
-                  {item.name}
-                </h3>
+                <h3 className="font-medium text-[#2f241c]">{item.name}</h3>
                 <p className="text-sm text-[#6b4f3f]">
                   Quantity: {item.quantity}
                 </p>
@@ -115,9 +121,7 @@ function Checkout({ cartItems, setCartItems }) {
               type="text"
               placeholder="Full Name"
               value={address.name}
-              onChange={(e) =>
-                setAddress({ ...address, name: e.target.value })
-              }
+              onChange={(e) => setAddress({ ...address, name: e.target.value })}
               className="rounded border px-4 py-3"
             />
 
@@ -145,9 +149,7 @@ function Checkout({ cartItems, setCartItems }) {
               type="text"
               placeholder="City"
               value={address.city}
-              onChange={(e) =>
-                setAddress({ ...address, city: e.target.value })
-              }
+              onChange={(e) => setAddress({ ...address, city: e.target.value })}
               className="rounded border px-4 py-3"
             />
 

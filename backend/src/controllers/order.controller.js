@@ -1,37 +1,39 @@
-import mongoose from "mongoose";
 import Order from "../models/order.model.js";
-import Product from "../models/product.model.js";
 
-const TEMP_USER_ID = new mongoose.Types.ObjectId("64b000000000000000000001");
-
-// Controller to get all orders
+/* ======================================
+   ADMIN: Get all orders
+====================================== */
 export const getAllOrders = async (req, res) => {
-    try{
-        const orders = await Order.find().populate('userId', 'name email').populate('items.productId', 'name price');
-        res.status(200).json(orders);
+  try {
+    const orders = await Order.find()
+      .populate("userId", "name email")
+      .populate("items.productId", "name price")
+      .sort({ createdAt: -1 });
 
-    }catch(err){
-        res.status(500).json({ message: "Server Error", error: err.message });
-    }
+    res.status(200).json({
+      success: true,
+      orders,
+    });
+  } catch (error) {
+    console.error("❌ Get all orders error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch orders",
+    });
+  }
 };
 
-// Controller to create a new order
+/* ======================================
+   CREATE ORDER (Guest or Logged-in)
+====================================== */
 export const createOrder = async (req, res) => {
   try {
     const { items, totalAmount, address } = req.body;
 
-    // Basic validation
     if (!items || items.length === 0) {
       return res.status(400).json({
         success: false,
         message: "Order must contain items",
-      });
-    }
-
-    if (!totalAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Total amount is required",
       });
     }
 
@@ -51,10 +53,14 @@ export const createOrder = async (req, res) => {
     }
 
     const order = await Order.create({
+      userId: req.user.id,                 // ✅ always present
       items,
       totalAmount,
-      address,
-      // userId intentionally optional (guest checkout)
+      address: {
+        ...address,
+        email: req.user.email,             // ✅ inject here
+      },
+      status: "PENDING",
     });
 
     return res.status(201).json({
@@ -63,38 +69,53 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Create order error:", error);
-
     return res.status(500).json({
       success: false,
-      message: "Internal server error while creating order",
+      message: "Failed to create order",
     });
   }
 };
 
 
-
-
-
-
-// Controller to get the logged-in user's past orders
+/* ======================================
+   USER: Get my orders
+====================================== */
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user._id })
-      .populate("items.productId", "name price");
+    const orders = await Order.find({ userId: req.user.id })
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       orders,
     });
-  } catch (err) {
-    res.status(500).json({ message: "Server Error", error: err.message });
+  } catch (error) {
+    console.error("❌ Fetch my orders error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch orders",
+    });
   }
 };
 
+/* ======================================
+   OPTIONAL: Latest pending order
+   (useful for payments later)
+====================================== */
 export const getLatestPendingOrder = async (req, res) => {
-  const order = await Order.findOne({ status: "PENDING" })
-    .sort({ createdAt: -1 })
-    .populate("items.productId", "name price");
+  try {
+    const order = await Order.findOne({
+      userId: req.user.id,
+      status: "PENDING",
+    })
+      .sort({ createdAt: -1 })
+      .populate("items.productId", "name price");
 
-  res.json(order || { items: [], totalAmount: 0 });
+    res.status(200).json(order || null);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch pending order",
+    });
+  }
 };

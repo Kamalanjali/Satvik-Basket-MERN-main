@@ -64,6 +64,7 @@ export const authApi = {
 // Order API endpoints
 export const orderApi = {
   create: (orderData) => api.post("/orders", orderData),
+  getMyOrders: () => api.get("/orders/my-orders"),
   getAll: () => api.get("/orders"),
   getById: (id) => api.get(`/orders/${id}`),
 };
