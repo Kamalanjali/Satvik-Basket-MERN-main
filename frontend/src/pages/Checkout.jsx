@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { orderApi, addressApi } from "../services/api";
 import { openRazorpayCheckout } from "../utils/razorpayCheckout";
+import toast from "react-hot-toast";
 
 function Checkout({ cartItems, setCartItems }) {
   const navigate = useNavigate();
 
   const [submitting, setSubmitting] = useState(false);
+  const [paying, setPaying] = useState(false);
+
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
@@ -26,17 +29,15 @@ function Checkout({ cartItems, setCartItems }) {
     0
   );
 
-  /* ================= Fetch saved addresses ================= */
+  /* ================= Fetch addresses ================= */
   useEffect(() => {
     const fetchAddresses = async () => {
       try {
         const res = await addressApi.getAll();
         setAddresses(res.data || []);
-        if (res.data?.length) {
-          setSelectedAddressId(res.data[0]._id);
-        }
-      } catch (error) {
-        console.error("Failed to fetch addresses", error);
+        if (res.data?.length) setSelectedAddressId(res.data[0]._id);
+      } catch {
+        toast.error("Failed to load addresses");
       }
     };
 
@@ -53,12 +54,12 @@ function Checkout({ cartItems, setCartItems }) {
       !newAddress.state ||
       !newAddress.pincode
     ) {
-      alert("Please fill all required address fields");
+      toast.error("Please fill all required fields");
       return;
     }
 
     if (!/^[6-9]\d{9}$/.test(newAddress.phone)) {
-      alert("Enter a valid 10-digit Indian mobile number");
+      toast.error("Enter a valid 10-digit mobile number");
       return;
     }
 
@@ -78,21 +79,24 @@ function Checkout({ cartItems, setCartItems }) {
         state: "",
         pincode: "",
       });
+
+      toast.success("Address added");
     } catch {
-      alert("Failed to save address");
+      toast.error("Failed to save address");
     }
   };
 
   /* ================= Place order + Pay ================= */
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
-      alert("Please select a delivery address");
+      toast.error("Please select a delivery address");
       return;
     }
 
     try {
       setSubmitting(true);
 
+      // 1️⃣ Create order
       const res = await orderApi.create({
         addressId: selectedAddressId,
         orderItems: cartItems.map((item) => ({
@@ -107,77 +111,73 @@ function Checkout({ cartItems, setCartItems }) {
 
       const orderId = res.data.order._id;
 
+      // 2️⃣ Start payment
+      setPaying(true);
+
       await openRazorpayCheckout({
         orderId,
         onSuccess: () => {
           setCartItems([]);
-          navigate("/order-success", { state: { orderId } });
+          setPaying(false);
+          navigate("/order-success", {
+            state: { orderId, totalAmount },
+          });
+        },
+        onFailure: () => {
+          setPaying(false);
         },
       });
-    } catch (error) {
-      console.error("Order / Payment failed:", error);
-      alert("Order / Payment failed. Please try again.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Unable to place order");
     } finally {
       setSubmitting(false);
     }
   };
 
   /* ================= Empty cart ================= */
-  if (cartItems.length === 0) {
+  if (!cartItems.length) {
     return (
-      <div className="min-h-screen bg-[#fdf9f3] flex flex-col items-center justify-center">
-        <h2 className="mb-4 text-2xl font-serif font-bold text-[#2f241c]">
-          Your cart is empty
-        </h2>
-        <Link
-          to="/"
-          className="rounded bg-green-700 px-6 py-3 text-white hover:bg-green-800"
-        >
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <h2 className="mb-4 text-xl font-semibold">Your cart is empty</h2>
+        <Link to="/" className="text-green-700 font-medium">
           Continue Shopping
         </Link>
       </div>
     );
   }
 
+  const disabled = submitting || paying;
+
   /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-[#fdf9f3]">
       <div className="max-w-5xl mx-auto px-4 py-16">
-        <h1 className="mb-10 text-3xl font-serif font-bold text-[#2f241c]">
-          Checkout
-        </h1>
+        <h1 className="mb-10 text-3xl font-serif font-bold">Checkout</h1>
 
-        {/* ================= Cart Summary ================= */}
-        <div className="mb-10 rounded-lg bg-white p-6 shadow">
+        {/* Cart summary */}
+        <div className="mb-8 rounded bg-white p-6 shadow">
           {cartItems.map((item) => (
-            <div
-              key={item._id || item.id}
-              className="flex justify-between border-b py-4 last:border-b-0"
-            >
-              <div>
-                <h3 className="font-medium text-[#2f241c]">{item.name}</h3>
-                <p className="text-sm text-[#6b4f3f]">
-                  Quantity: {item.quantity}
-                </p>
-              </div>
-              <span className="font-semibold text-green-800">
+            <div key={item._id || item.id} className="flex justify-between py-2">
+              <span>
+                {item.name} × {item.quantity}
+              </span>
+              <span className="font-semibold">
                 ₹{item.price * item.quantity}
               </span>
             </div>
           ))}
         </div>
 
-        {/* ================= Address Selection ================= */}
-        <div className="mb-10 rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-serif font-semibold text-[#2f241c]">
-            Delivery Address
-          </h2>
+        {/* Address selection */}
+        <div className="mb-8 rounded bg-white p-6 shadow">
+          <h2 className="mb-4 font-semibold">Delivery Address</h2>
 
           {addresses.map((addr) => (
             <div
               key={addr._id}
               onClick={() => setSelectedAddressId(addr._id)}
-              className={`mb-4 cursor-pointer rounded border p-4 ${
+              className={`mb-3 cursor-pointer rounded border p-3 ${
                 selectedAddressId === addr._id
                   ? "border-green-700 bg-green-50"
                   : "border-gray-300"
@@ -192,62 +192,58 @@ function Checkout({ cartItems, setCartItems }) {
           ))}
 
           <button
+            disabled={disabled}
             onClick={() => setShowNewAddressForm(!showNewAddressForm)}
-            className="text-sm font-medium text-green-700"
+            className="text-sm text-green-700 font-medium"
           >
             + Add new address
           </button>
 
           {showNewAddressForm && (
-            <div className="mt-4 rounded border p-4">
-              <div className="grid grid-cols-1 gap-3">
-                {Object.keys(newAddress).map((field) => (
-                  <input
-                    key={field}
-                    placeholder={field.replace(/([A-Z])/g, " $1")}
-                    value={newAddress[field]}
-                    onChange={(e) =>
-                      setNewAddress({
-                        ...newAddress,
-                        [field]: e.target.value,
-                      })
-                    }
-                    className="border p-2 rounded"
-                  />
-                ))}
-
-                <button
-                  onClick={handleSaveNewAddress}
-                  className="rounded bg-green-700 py-2 text-white"
-                >
-                  Save Address
-                </button>
-              </div>
+            <div className="mt-4 grid gap-2">
+              {Object.keys(newAddress).map((field) => (
+                <input
+                  key={field}
+                  placeholder={field}
+                  value={newAddress[field]}
+                  onChange={(e) =>
+                    setNewAddress({ ...newAddress, [field]: e.target.value })
+                  }
+                  className="border p-2 rounded"
+                />
+              ))}
+              <button
+                disabled={disabled}
+                onClick={handleSaveNewAddress}
+                className="bg-green-700 text-white py-2 rounded"
+              >
+                Save Address
+              </button>
             </div>
           )}
         </div>
 
-        {/* ================= Total ================= */}
-        <div className="flex justify-between rounded-lg bg-[#f5efe6] p-6">
-          <span className="text-lg font-semibold text-[#2f241c]">
-            Total Amount
-          </span>
-          <span className="text-2xl font-bold text-green-800">
-            ₹{totalAmount}
-          </span>
+        {/* Total */}
+        <div className="flex justify-between bg-[#f5efe6] p-6 rounded">
+          <span className="font-semibold">Total</span>
+          <span className="font-bold text-green-800">₹{totalAmount}</span>
         </div>
 
-        {/* ================= Place Order ================= */}
+        {/* Pay button */}
         <button
-          disabled={submitting}
+          disabled={disabled}
           onClick={handlePlaceOrder}
-          className={`mt-8 w-full rounded py-4 text-lg font-semibold ${
-            submitting
+          className={`mt-8 w-full py-4 rounded font-semibold ${
+            disabled
               ? "bg-gray-300 text-gray-500 cursor-not-allowed"
               : "bg-green-700 text-white hover:bg-green-800"
           }`}
         >
-          {submitting ? "Processing..." : "Pay & Place Order"}
+          {paying
+            ? "Processing payment..."
+            : submitting
+            ? "Placing order..."
+            : "Pay & Place Order"}
         </button>
       </div>
     </div>

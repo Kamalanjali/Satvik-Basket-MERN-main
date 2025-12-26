@@ -18,21 +18,34 @@ export const loadRazorpayScript = () => {
 };
 
 /**
- * Open Razorpay Checkout (AUTHENTICATED)
+ * Open Razorpay Checkout (Safe + Idempotent)
  */
-export const openRazorpayCheckout = async ({ orderId, onSuccess, onClose, onFailure, }) => {
+export const openRazorpayCheckout = async ({
+  orderId,
+  onSuccess,
+  onFailure,
+}) => {
+  let finalized = false;
+
+  const failSafely = (message) => {
+    if (finalized) return;
+    finalized = true;
+    toast.error(message);
+    onFailure?.();
+  };
+
   const loaded = await loadRazorpayScript();
   if (!loaded) {
-    toast.error("Failed to load payment gateway. Please refresh.");
+    failSafely("Unable to load payment system");
     return;
   }
 
   try {
-    // 1️⃣ Create Razorpay order (backend)
+    // 🔐 Backend creates Razorpay order
     const { data } = await api.post("/payments/razorpay/create", { orderId });
+
     const { razorpayOrder, paymentId } = data;
 
-    // 2️⃣ Configure checkout options
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
       amount: razorpayOrder.amount,
@@ -43,7 +56,6 @@ export const openRazorpayCheckout = async ({ orderId, onSuccess, onClose, onFail
 
       handler: async (response) => {
         try {
-          // 3️⃣ Verify payment (backend)
           await api.post("/payments/razorpay/verify", {
             razorpay_order_id: response.razorpay_order_id,
             razorpay_payment_id: response.razorpay_payment_id,
@@ -51,39 +63,36 @@ export const openRazorpayCheckout = async ({ orderId, onSuccess, onClose, onFail
             paymentId,
           });
 
-          toast.success("Payment successful 🎉");
+          if (finalized) return;
+          finalized = true;
+
+          toast.success("Payment successful 🎉 Order confirmed");
           onSuccess?.();
-        } catch (err) {
-          console.error("Payment verification failed", err);
-          toast.error("Payment verification failed. Please retry.");
-          onfalure?.();
+        } catch {
+          failSafely(
+            "Payment received but verification failed. Support will contact you."
+          );
         }
       },
 
       modal: {
         ondismiss: () => {
-          toast("Payment cancelled. You can retry from Orders.", {
-            icon: "⚠️",
-          });
-          onClose?.();
+          failSafely("Payment cancelled. You can retry anytime.");
         },
       },
 
       theme: { color: "#4CAF50" },
     };
 
-    // 4️⃣ Open checkout + handle failure event
-    const razorpay = new window.Razorpay(options);
+    const rzp = new window.Razorpay(options);
 
-    razorpay.on("payment.failed", () => {
-      toast.error("Payment failed. You can retry from Orders page.");
-      onFailure?.();
+    rzp.on("payment.failed", () => {
+      failSafely("Payment failed. Please try again.");
     });
 
-    razorpay.open();
+    rzp.open();
   } catch (error) {
-    console.error("Razorpay checkout error:", error);
-    toast.error("Payment initiation failed. Please try again.");
-    onFailure?.();
+    console.error("Razorpay error:", error);
+    failSafely("Unable to initiate payment");
   }
 };
