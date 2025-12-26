@@ -1,5 +1,4 @@
 import express from "express";
-import upload from "../middleware/upload.middleware.js";
 import {
   getAllProducts,
   getProductById,
@@ -32,7 +31,6 @@ router.put(
   "/:id/image-url",
   protect,
   adminOnly,
-  upload.single("image"),
   updateProductImageUrl
 );
 
