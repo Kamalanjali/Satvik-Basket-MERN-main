@@ -10,6 +10,7 @@ import Orders from "./pages/Orders";
 import Addresses from "./pages/Addresses";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,40 +31,49 @@ function App() {
   );
 
   return (
-    <BrowserRouter
-    future={{
-    v7_startTransition: true,
-    v7_relativeSplatPath: true,
-  }}>
-      <Header
-        onSearch={handleSearch}
-        cartItemCount={cartItemCount}
-        onCartToggle={handleCartToggle}
-      />
-
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Home
-              searchQuery={searchQuery}
-              cartItems={cartItems}
-              setCartItems={setCartItems}
-              cartOpen={cartOpen}
-              setCartOpen={setCartOpen}
-            />
-          }
+    <>
+      <Toaster position="top-right" reverseOrder={false} />
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <Header
+          onSearch={handleSearch}
+          cartItemCount={cartItemCount}
+          onCartToggle={handleCartToggle}
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="*" element={<NotFound />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/addresses" element={<Addresses />} />
-        <Route path="/checkout" element={<Checkout cartItems={cartItems} setCartItems={setCartItems} />} />
-        <Route path="/order-success" element={<OrderSuccess />} />
-      </Routes>
-    </BrowserRouter>
+
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Home
+                searchQuery={searchQuery}
+                cartItems={cartItems}
+                setCartItems={setCartItems}
+                cartOpen={cartOpen}
+                setCartOpen={setCartOpen}
+              />
+            }
+          />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<NotFound />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/addresses" element={<Addresses />} />
+          <Route
+            path="/checkout"
+            element={
+              <Checkout cartItems={cartItems} setCartItems={setCartItems} />
+            }
+          />
+          <Route path="/order-success" element={<OrderSuccess />} />
+        </Routes>
+      </BrowserRouter>
+    </>
   );
 }
 

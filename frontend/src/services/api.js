@@ -78,4 +78,13 @@ export const addressApi = {
   setDefault: (id) => api.put(`/addresses/${id}/default`),
 };
 
-export default api;
+// Payment API endpoints
+export const paymentApi = {
+  createRazorpayOrder: (data) =>
+    api.post("/payments/razorpay/create", data),
+
+  verifyRazorpayPayment: (data) =>
+    api.post("/payments/razorpay/verify", data),
+};
+
+export {api};

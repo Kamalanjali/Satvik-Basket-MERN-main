@@ -1,108 +1,117 @@
+import crypto from "crypto";
 import Payment from "../models/payment.model.js";
 import Order from "../models/order.model.js";
+import razorpayInstance from "../config/razorpay.js";
 
 /**
- * Create Payment (INITIATED)
+ * Create Razorpay Order + Payment (INITIATED)
  */
-export const createPayment = async (req, res) => {
+export const createRazorpayPayment = async (req, res) => {
   try {
-    const { orderId, amount, provider } = req.body;
+    const { orderId } = req.body;
 
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Order not found"
+        message: "Order not found",
       });
     }
 
+    if (order.orderStatus !== "CREATED") {
+      return res.status(400).json({
+        success: false,
+        message: "Order is not eligible for payment",
+      });
+    }
+
+    // Always trust DB, never client
+    const amount = order.totalAmount;
+
+    const razorpayOrder = await razorpayInstance.orders.create({
+      amount: amount * 100,
+      currency: "INR",
+      receipt: `order_${order._id}`,
+    });
+
     const payment = await Payment.create({
-      orderId,
+      orderId: order._id,
       amount,
-      provider
+      provider: "RAZORPAY",
+      providerOrderId: razorpayOrder.id,
+      status: "INITIATED",
     });
 
     res.status(201).json({
       success: true,
-      payment
+      razorpayOrder,
+      paymentId: payment._id,
     });
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Server Error",
-      error: err.message
+      message: "Failed to create Razorpay payment",
+      error: error.message,
     });
   }
 };
 
 /**
- * Mark Payment as SUCCESS
+ * Verify Razorpay Payment (FINAL STEP)
  */
-export const markPaymentSuccess = async (req, res) => {
+export const verifyRazorpayPayment = async (req, res) => {
   try {
-    const { paymentId } = req.params;
-    const { providerPaymentId } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      paymentId,
+    } = req.body;
 
     const payment = await Payment.findById(paymentId);
     if (!payment) {
       return res.status(404).json({
         success: false,
-        message: "Payment not found"
+        message: "Payment not found",
       });
     }
 
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      payment.status = "FAILED";
+      await payment.save();
+
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed",
+      });
+    }
+
+    // ✅ Verified
     payment.status = "SUCCESS";
-    payment.providerPaymentId = providerPaymentId;
-
+    payment.providerPaymentId = razorpay_payment_id;
     await payment.save();
 
-    // Optional but VERY GOOD practice
     await Order.findByIdAndUpdate(payment.orderId, {
-      status: "PAID"
+      OrderStatus: "PAID",
+      paymentStatus: "SUCCESS",
     });
 
     res.status(200).json({
       success: true,
-      message: "Payment marked as SUCCESS",
-      payment
+      message: "Payment verified successfully",
     });
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Server Error",
-      error: err.message
-    });
-  }
-};
-
-/**
- * Mark Payment as FAILED
- */
-export const markPaymentFailed = async (req, res) => {
-  try {
-    const { paymentId } = req.params;
-
-    const payment = await Payment.findById(paymentId);
-    if (!payment) {
-      return res.status(404).json({
-        success: false,
-        message: "Payment not found"
-      });
-    }
-
-    payment.status = "FAILED";
-    await payment.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Payment marked as FAILED",
-      payment
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: err.message
+      message: "Payment verification error",
+      error: error.message,
     });
   }
 };

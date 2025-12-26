@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { orderApi, addressApi } from "../services/api";
+import { openRazorpayCheckout } from "../utils/razorpayCheckout";
 
 function Checkout({ cartItems, setCartItems }) {
   const navigate = useNavigate();
@@ -8,8 +9,8 @@ function Checkout({ cartItems, setCartItems }) {
   const [submitting, setSubmitting] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+
   const [newAddress, setNewAddress] = useState({
     fullName: "",
     email: "",
@@ -31,8 +32,7 @@ function Checkout({ cartItems, setCartItems }) {
       try {
         const res = await addressApi.getAll();
         setAddresses(res.data || []);
-
-        if (res.data?.length > 0) {
+        if (res.data?.length) {
           setSelectedAddressId(res.data[0]._id);
         }
       } catch (error) {
@@ -64,12 +64,10 @@ function Checkout({ cartItems, setCartItems }) {
 
     try {
       await addressApi.add(newAddress);
-
       const updated = await addressApi.getAll();
       setAddresses(updated.data);
-
-      const lastAdded = updated.data[updated.data.length - 1];
-      setSelectedAddressId(lastAdded._id);
+      setSelectedAddressId(updated.data.at(-1)._id);
+      setShowNewAddressForm(false);
 
       setNewAddress({
         fullName: "",
@@ -80,14 +78,12 @@ function Checkout({ cartItems, setCartItems }) {
         state: "",
         pincode: "",
       });
-
-      setShowNewAddressForm(false);
-    } catch (error) {
+    } catch {
       alert("Failed to save address");
     }
   };
 
-  /* ================= Place order ================= */
+  /* ================= Place order + Pay ================= */
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
       alert("Please select a delivery address");
@@ -97,7 +93,7 @@ function Checkout({ cartItems, setCartItems }) {
     try {
       setSubmitting(true);
 
-      const payload = {
+      const res = await orderApi.create({
         addressId: selectedAddressId,
         orderItems: cartItems.map((item) => ({
           product: item._id || item.id,
@@ -107,21 +103,20 @@ function Checkout({ cartItems, setCartItems }) {
         })),
         paymentMethod: "RAZORPAY",
         totalAmount,
-      };
+      });
 
-      const res = await orderApi.create(payload);
+      const orderId = res.data.order._id;
 
-      setCartItems([]);
-
-      navigate("/order-success", {
-        state: {
-          orderId: res.data.order._id,
-          totalAmount,
+      await openRazorpayCheckout({
+        orderId,
+        onSuccess: () => {
+          setCartItems([]);
+          navigate("/order-success", { state: { orderId } });
         },
       });
     } catch (error) {
-      console.error("Order creation failed:", error);
-      alert("Failed to place order. Please try again.");
+      console.error("Order / Payment failed:", error);
+      alert("Order / Payment failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -144,6 +139,7 @@ function Checkout({ cartItems, setCartItems }) {
     );
   }
 
+  /* ================= UI ================= */
   return (
     <div className="min-h-screen bg-[#fdf9f3]">
       <div className="max-w-5xl mx-auto px-4 py-16">
@@ -181,12 +177,11 @@ function Checkout({ cartItems, setCartItems }) {
             <div
               key={addr._id}
               onClick={() => setSelectedAddressId(addr._id)}
-              className={`mb-4 cursor-pointer rounded border p-4
-                ${
-                  selectedAddressId === addr._id
-                    ? "border-green-700 bg-green-50"
-                    : "border-gray-300"
-                }`}
+              className={`mb-4 cursor-pointer rounded border p-4 ${
+                selectedAddressId === addr._id
+                  ? "border-green-700 bg-green-50"
+                  : "border-gray-300"
+              }`}
             >
               <p className="font-medium">{addr.fullName}</p>
               <p className="text-sm text-gray-600">
@@ -196,7 +191,6 @@ function Checkout({ cartItems, setCartItems }) {
             </div>
           ))}
 
-          {/* Add new address toggle */}
           <button
             onClick={() => setShowNewAddressForm(!showNewAddressForm)}
             className="text-sm font-medium text-green-700"
@@ -204,76 +198,23 @@ function Checkout({ cartItems, setCartItems }) {
             + Add new address
           </button>
 
-          {/* ================= New Address Form ================= */}
           {showNewAddressForm && (
             <div className="mt-4 rounded border p-4">
               <div className="grid grid-cols-1 gap-3">
-                <input
-                  placeholder="Full Name"
-                  value={newAddress.fullName}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, fullName: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-
-                <input
-                  placeholder="Email"
-                  value={newAddress.email}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, email: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-
-                <input
-                  placeholder="Phone Number"
-                  value={newAddress.phone}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "").slice(-10);
-                    setNewAddress({ ...newAddress, phone: e.target.value });
-                  }}
-                  className="border p-2 rounded"
-                />
-
-                <input
-                  placeholder="Address"
-                  value={newAddress.addressLine1}
-                  onChange={(e) =>
-                    setNewAddress({
-                      ...newAddress,
-                      addressLine1: e.target.value,
-                    })
-                  }
-                  className="border p-2 rounded"
-                />
-
-                <input
-                  placeholder="City"
-                  value={newAddress.city}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, city: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-
-                <input
-                  placeholder="State"
-                  value={newAddress.state}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, state: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-
-                <input
-                  placeholder="Pincode"
-                  value={newAddress.pincode}
-                  onChange={(e) =>
-                    setNewAddress({ ...newAddress, pincode: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
+                {Object.keys(newAddress).map((field) => (
+                  <input
+                    key={field}
+                    placeholder={field.replace(/([A-Z])/g, " $1")}
+                    value={newAddress[field]}
+                    onChange={(e) =>
+                      setNewAddress({
+                        ...newAddress,
+                        [field]: e.target.value,
+                      })
+                    }
+                    className="border p-2 rounded"
+                  />
+                ))}
 
                 <button
                   onClick={handleSaveNewAddress}
@@ -298,16 +239,15 @@ function Checkout({ cartItems, setCartItems }) {
 
         {/* ================= Place Order ================= */}
         <button
-          disabled={!selectedAddressId || submitting}
+          disabled={submitting}
           onClick={handlePlaceOrder}
-          className={`mt-8 w-full rounded py-4 text-lg font-semibold
-            ${
-              selectedAddressId && !submitting
-                ? "bg-green-700 text-white hover:bg-green-800"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+          className={`mt-8 w-full rounded py-4 text-lg font-semibold ${
+            submitting
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-green-700 text-white hover:bg-green-800"
+          }`}
         >
-          {submitting ? "Placing Order..." : "Place Order"}
+          {submitting ? "Processing..." : "Pay & Place Order"}
         </button>
       </div>
     </div>

@@ -1,19 +1,47 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { orderApi } from "../services/api";
 
 function OrderSuccess() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const orderId = location.state?.orderId;
+
   useEffect(() => {
-    if (!location.state) {
+    // If user lands here without an orderId, kick them out
+    if (!orderId) {
       navigate("/", { replace: true });
+      return;
     }
-  }, [location.state, navigate]);
 
-  if (!location.state) return null; // prevent flicker
+    const fetchOrder = async () => {
+      try {
+        const res = await orderApi.getOrderById(orderId);
+        setOrder(res.data.order);
+      } catch (error) {
+        console.error("Failed to fetch order", error);
+        navigate("/", { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const { orderId, totalAmount } = location.state;
+    fetchOrder();
+  }, [orderId, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fdf9f3]">
+        <p className="text-[#2f241c]">Loading order details…</p>
+      </div>
+    );
+  }
+
+  if (!order) return null;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdf9f3] text-center px-4">
@@ -22,11 +50,11 @@ function OrderSuccess() {
       </h1>
 
       <p className="mb-2 text-[#2f241c]">
-        Order ID: <strong>{orderId}</strong>
+        Order ID: <strong>{order._id}</strong>
       </p>
 
       <p className="mb-6 text-[#2f241c]">
-        Total Paid: <strong>₹{totalAmount}</strong>
+        Total Paid: <strong>₹{order.totalAmount}</strong>
       </p>
 
       <button

@@ -1,20 +1,29 @@
 import express from "express";
 import {
-  createPayment,
-  markPaymentSuccess,
-  markPaymentFailed
+  createRazorpayPayment,
+  verifyRazorpayPayment,
 } from "../controllers/payment.controller.js";
 
 import { protect } from "../middleware/auth.middleware.js";
-import { adminOnly } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
-// Create payment (user)
-router.post("/", protect, createPayment);
+/**
+ * Razorpay Payment Flow
+ */
 
-// Update payment status (admin / webhook simulation)
-router.put("/:paymentId/success", protect, adminOnly, markPaymentSuccess);
-router.put("/:paymentId/fail", protect, adminOnly, markPaymentFailed);
+// Create Razorpay order + Payment (INITIATED)
+router.post(
+  "/razorpay/create",
+  protect,
+  createRazorpayPayment
+);
+
+// Verify Razorpay payment (SUCCESS / FAILED)
+router.post(
+  "/razorpay/verify",
+  protect,
+  verifyRazorpayPayment
+);
 
 export default router;
