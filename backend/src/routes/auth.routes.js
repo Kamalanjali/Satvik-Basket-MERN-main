@@ -1,24 +1,65 @@
 import express from "express";
+import passport from "passport";
+import { protect } from "../middleware/auth.middleware.js";
+
 import {
   registerUser,
   loginUser,
   getMe,
-  logoutUser
+  logoutUser,
+  resetPassword, // ✅ ADDED
 } from "../controllers/auth.controller.js";
 
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-// POST /api/v1/auth/register
-router.post("/register", registerUser);
+/* ===============================
+   Google OAuth
+================================ */
 
-// POST /api/v1/auth/login
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { session: false }),
+  (req, res) => {
+    // OAuth logins = long-lived session
+    const token = jwt.sign(
+      { userId: req.user._id, role: req.user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    res.redirect("http://localhost:5173");
+  }
+);
+
+/* ===============================
+   Local Auth
+================================ */
+
+router.post("/register", registerUser);
 router.post("/login", loginUser);
 
-// GET /api/v1/auth/me
-router.get("/me", getMe);
+// 🔐 SIMPLE FORGOT PASSWORD (EMAIL ONLY)
+router.post("/reset-password", resetPassword);
 
-// POST /api/v1/auth/logout
-router.post("/logout", logoutUser);
+/* ===============================
+   Session
+================================ */
+
+router.get("/me", protect, getMe);
+router.post("/logout", protect, logoutUser);
 
 export default router;

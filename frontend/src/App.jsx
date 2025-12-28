@@ -1,16 +1,19 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useCallback } from "react";
+import { Toaster } from "react-hot-toast";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
-import Header from "./components/Header";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
-import Addresses from "./pages/Addresses";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
-import { Toaster } from "react-hot-toast";
+
+import Header from "./components/Header";
+import PublicRoute from "./components/PublicRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,7 +35,8 @@ function App() {
 
   return (
     <>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-right" />
+
       <BrowserRouter
         future={{
           v7_startTransition: true,
@@ -46,6 +50,7 @@ function App() {
         />
 
         <Routes>
+          {/* Public */}
           <Route
             path="/"
             element={
@@ -58,19 +63,61 @@ function App() {
               />
             }
           />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/addresses" element={<Addresses />} />
+
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+
+          {/* Protected */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <Orders />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/checkout"
             element={
-              <Checkout cartItems={cartItems} setCartItems={setCartItems} />
+              <Checkout
+                cartItems={cartItems}
+                setCartItems={setCartItems}
+              />
             }
           />
-          <Route path="/order-success" element={<OrderSuccess />} />
+
+          <Route
+            path="/order-success"
+            element={<OrderSuccess />}
+          />
+
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X } from "lucide-react";
+import { Search, ShoppingCart } from "lucide-react";
+import { authApi } from "../services/api";
 
 function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
   const navigate = useNavigate();
@@ -8,18 +9,27 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
   const dropdownRef = useRef(null);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // Re-read user on route change
+  // 🔐 ALWAYS re-check auth on navigation (OAuth-safe)
   useEffect(() => {
-    setProfileOpen(false);
-    const storedUser = localStorage.getItem("user");
-    setUser(storedUser ? JSON.parse(storedUser) : null);
-  }, [location.pathname]);
+    const fetchUser = async () => {
+      try {
+        const res = await authApi.me();
+        setUser(res.data.user);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoadingAuth(false);
+      }
+    };
 
-  // Close dropdown on outside click
+    fetchUser();
+  }, [location.pathname]); // 🔥 THIS IS THE FIX
+
+  // Close profile dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -27,8 +37,7 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSearchChange = (e) => {
@@ -42,18 +51,21 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
     onSearch?.(searchQuery);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-    setProfileOpen(false);
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
+      setProfileOpen(false);
+      navigate("/login", { replace: true });
+    }
   };
 
   const getInitials = (name = "") => {
     const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0][0]?.toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+    return parts.length === 1
+      ? parts[0][0]?.toUpperCase()
+      : (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
   return (
@@ -65,7 +77,7 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
             Satvik Basket
           </Link>
 
-          {/* Search (desktop) */}
+          {/* Search */}
           <form
             onSubmit={handleSearchSubmit}
             className="hidden md:flex flex-1 max-w-md mx-8"
@@ -77,7 +89,7 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 placeholder="Search products..."
-                className="w-full rounded-md border border-[#e6d9c8] bg-white px-4 py-2 pl-10 text-sm
+                className="w-full rounded-md border border-[#e6d9c8] px-4 py-2 pl-10 text-sm
                            focus:outline-none focus:ring-2 focus:ring-green-700"
               />
             </div>
@@ -89,27 +101,28 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
             <button
               onClick={onCartToggle}
               className="relative rounded-md border border-[#e6d9c8] bg-white p-2
-                         text-[#3b2f2f] hover:bg-[#f5efe6]"
+                         hover:bg-[#f5efe6]"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5
-                                 items-center justify-center rounded-full
-                                 bg-green-700 text-xs font-bold text-white">
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center
+                                 justify-center rounded-full bg-green-700 text-xs text-white">
                   {cartItemCount}
                 </span>
               )}
             </button>
 
             {/* Auth */}
-            {!user ? (
+            {!loadingAuth && !user && (
               <Link
                 to="/login"
                 className="rounded-md bg-green-700 px-5 py-2.5 text-sm text-white hover:bg-green-800"
               >
                 Login
               </Link>
-            ) : (
+            )}
+
+            {!loadingAuth && user && (
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setProfileOpen((p) => !p)}
@@ -120,7 +133,7 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
 
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-60 rounded-md bg-white
-                                  border border-[#e6d9c8] shadow-lg z-50">
+                                  border border-[#e6d9c8] shadow-lg">
                     <div className="px-4 py-3 border-b">
                       <p className="text-sm font-medium">{user.name}</p>
                       <p className="text-xs text-[#6b4f3f]">{user.email}</p>
@@ -129,19 +142,13 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
                       to="/profile"
                       className="block px-4 py-2 hover:bg-[#f5efe6]"
                     >
-                      Profile details
+                      Profile
                     </Link>
                     <Link
                       to="/orders"
                       className="block px-4 py-2 hover:bg-[#f5efe6]"
                     >
-                      Previous orders
-                    </Link>
-                    <Link
-                      to="/addresses"
-                      className="block px-4 py-2 hover:bg-[#f5efe6]"
-                    >
-                      Addresses
+                      Orders
                     </Link>
                     <button
                       onClick={handleLogout}

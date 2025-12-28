@@ -1,67 +1,55 @@
 import axios from "axios";
+// ===============================
+// Base API Configuration
+// ===============================
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
 
-// Base API configuration
-// Update this URL to point to your backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
-
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true, // 🔥 REQUIRED for HttpOnly cookies
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor for adding auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for handling errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    const currentPath = window.location.pathname;
-
-    // Redirect only if user is already logged in and token is invalid
-    if (
-      status === 401 &&
-      currentPath !== "/login" &&
-      currentPath !== "/register"
-    ) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-    }
-
-    return Promise.reject(error);
-  }
-);
+// ===============================
+// NOTE:
+// ❌ NO localStorage tokens
+// ❌ NO Authorization headers
+// ❌ NO auth interceptors
+//
+// Auth is server-driven via cookies
+// ===============================
 
 
-// Product API endpoints
+// ===============================
+// Auth API
+// ===============================
+export const authApi = {
+  login: (data) => api.post("/auth/login", data),
+  register: (data) => api.post("/auth/register", data),
+  logout: () => api.post("/auth/logout"),
+  me: () => api.get("/auth/me"),
+  resetPassword: (data) =>
+    api.post("/auth/reset-password",data),
+};
+
+
+// ===============================
+// Product API
+// ===============================
 export const productApi = {
   getAll: (params) => api.get("/products", { params }),
   getById: (id) => api.get(`/products/${id}`),
-  search: (query) => api.get("/products/search", { params: { q: query } }),
+  search: (query) =>
+    api.get("/products/search", { params: { q: query } }),
 };
 
-// Auth API endpoints
-export const authApi = {
-  login: (credentials) => api.post("/auth/login", credentials),
-  register: (userData) => api.post("/auth/register", userData),
-  logout: () => api.post("/auth/logout"),
-};
 
-// Order API endpoints
+// ===============================
+// Order API
+// ===============================
 export const orderApi = {
   create: (orderData) => api.post("/orders", orderData),
   getMyOrders: () => api.get("/orders/my-orders"),
@@ -69,7 +57,10 @@ export const orderApi = {
   getById: (id) => api.get(`/orders/${id}`),
 };
 
-// Address API endpoints
+
+// ===============================
+// Address API
+// ===============================
 export const addressApi = {
   getAll: () => api.get("/addresses"),
   add: (data) => api.post("/addresses", data),
@@ -78,7 +69,10 @@ export const addressApi = {
   setDefault: (id) => api.put(`/addresses/${id}/default`),
 };
 
-// Payment API endpoints
+
+// ===============================
+// Payment API
+// ===============================
 export const paymentApi = {
   createRazorpayOrder: (data) =>
     api.post("/payments/razorpay/create", data),
@@ -86,5 +80,3 @@ export const paymentApi = {
   verifyRazorpayPayment: (data) =>
     api.post("/payments/razorpay/verify", data),
 };
-
-export {api};
