@@ -16,7 +16,7 @@ import { protect } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 /* ===============================
-   GOOGLE OAUTH
+   GOOGLE OAUTH (TOKEN FLOW)
 ================================ */
 router.get(
   "/google",
@@ -29,7 +29,7 @@ router.get(
   "/google/callback",
   passport.authenticate("google", {
     session: false,
-    failureRedirect: "/login",
+    failureRedirect: `${process.env.CLIENT_URL}/login`,
   }),
   (req, res) => {
     const token = jwt.sign(
@@ -38,15 +38,9 @@ router.get(
       { expiresIn: "30d" }
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,       // 🔥 REQUIRED
-      sameSite: "none",   // 🔥 REQUIRED
-      path: "/",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
-    res.redirect(process.env.CLIENT_URL);
+    res.redirect(
+      `${process.env.CLIENT_URL}/oauth-success?token=${token}`
+    );
   }
 );
 
@@ -58,7 +52,7 @@ router.post("/login", loginUser);
 router.post("/reset-password", resetPassword);
 
 /* ===============================
-   SESSION
+   SESSION (PROTECTED)
 ================================ */
 router.get("/me", protect, getMe);
 router.put("/me", protect, updateMe);

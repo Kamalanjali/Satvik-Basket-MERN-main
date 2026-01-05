@@ -6,6 +6,7 @@ import { authApi } from "../services/api";
 function Login() {
   const navigate = useNavigate();
 
+  /* ---------------- STATE ---------------- */
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -14,7 +15,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* Forgot password modal */
+  /* Reset password modal */
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -23,16 +24,21 @@ function Login() {
   const [resetLoading, setResetLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  /* Already logged in */
+
+  /* ---------------- AUTO REDIRECT IF LOGGED IN ---------------- */
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     authApi
       .me()
       .then(() => navigate("/", { replace: true }))
-      .catch(() => {});
+      .catch(() => {
+        localStorage.removeItem("token");
+      });
   }, [navigate]);
 
-  /* Login */
+  /* ---------------- LOGIN ---------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -53,7 +59,7 @@ function Login() {
     }
   };
 
-  /* Reset password */
+  /* ---------------- RESET PASSWORD ---------------- */
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setResetError("");
@@ -74,10 +80,17 @@ function Login() {
       setShowResetModal(false);
       navigate("/");
     } catch (err) {
-      setResetError(err.response?.data?.message || "Failed to reset password");
+      setResetError(
+        err.response?.data?.message || "Failed to reset password"
+      );
     } finally {
       setResetLoading(false);
     }
+  };
+
+  /* ---------------- GOOGLE LOGIN ---------------- */
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
   };
 
   return (
@@ -107,13 +120,9 @@ function Login() {
             </div>
           )}
 
-          {/* Google */}
+          {/* Google Login */}
           <button
-            onClick={() => {
-              window.location.href = `${
-                import.meta.env.VITE_API_BASE_URL
-              }/auth/google`;
-            }}
+            onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 border rounded-md py-2.5 hover:bg-[#f5efe6]"
           >
             <img
@@ -222,10 +231,14 @@ function Login() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowNewPassword((v) => !v)}
+                  onClick={() => setShowNewPassword(!showNewPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
-                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showNewPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
                 </button>
               </div>
 
@@ -239,7 +252,9 @@ function Login() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                   className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
                   {showConfirmPassword ? (

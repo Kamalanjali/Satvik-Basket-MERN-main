@@ -1,25 +1,16 @@
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import path from "path";
 
 /* ===============================
-   Helper: issue JWT + cookie
+   Helper: issue JWT (NO COOKIES)
 ================================ */
-const sendToken = (res, userId, role, rememberMe = false) => {
-  const expiresIn = rememberMe ? "30d" : "1h";
-
-  const token = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
-    expiresIn,
-  });
-
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: true, // 🔥 REQUIRED
-    sameSite: "none", // 🔥 REQUIRED for Vercel ↔ Railway
-    path: "/",
-    maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000,
-  });
+const issueToken = (userId, role, rememberMe = false) => {
+  return jwt.sign(
+    { userId, role },
+    process.env.JWT_SECRET,
+    { expiresIn: rememberMe ? "30d" : "1h" }
+  );
 };
 
 /* ===============================
@@ -31,10 +22,7 @@ export const registerUser = async (req, res, next) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const user = await User.create({
@@ -44,10 +32,11 @@ export const registerUser = async (req, res, next) => {
       provider: "local",
     });
 
-    sendToken(res, user._id, user.role, rememberMe);
+    const token = issueToken(user._id, user.role, rememberMe);
 
     res.status(201).json({
       success: true,
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -77,10 +66,11 @@ export const loginUser = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    sendToken(res, user._id, user.role, rememberMe);
+    const token = issueToken(user._id, user.role, rememberMe);
 
     res.status(200).json({
       success: true,
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -102,24 +92,24 @@ export const resetPassword = async (req, res, next) => {
 
     const user = await User.findOne({ email });
     if (!user || user.provider !== "local") {
-      return res.status(400).json({
-        message: "Password reset allowed only for email accounts",
-      });
+      return res
+        .status(400)
+        .json({ message: "Password reset only for email accounts" });
     }
 
     user.password = newPassword;
     await user.save();
 
-    sendToken(res, user._id, user.role, true);
+    const token = issueToken(user._id, user.role, true);
 
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true, token });
   } catch (err) {
     next(err);
   }
 };
 
 /* ===============================
-   Session
+   Get Logged-in User
 ================================ */
 export const getMe = async (req, res) => {
   res.status(200).json({
@@ -128,26 +118,26 @@ export const getMe = async (req, res) => {
   });
 };
 
+/* ===============================
+   Logout (CLIENT HANDLED)
+================================ */
 export const logoutUser = async (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    path: "/",
-  });
-
   res.status(200).json({
     success: true,
-    message: "Logged out successfully",
+    message: "Logged out (client should delete token)",
   });
 };
 
+/* ===============================
+   Update Profile
+================================ */
 export const updateMe = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.user._id, req.body, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      req.body,
+      { new: true, runValidators: true }
+    ).select("-password");
 
     res.status(200).json({ user });
   } catch (err) {

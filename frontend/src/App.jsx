@@ -9,6 +9,7 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
+import OAuthSuccess from "./pages/OAuthSuccess";
 
 import Header from "./components/Header";
 import Cart from "./components/Cart";
@@ -33,9 +34,7 @@ function App() {
     if (quantity <= 0) return;
     setCartItems((items) =>
       items.map((item) =>
-        (item._id || item.id) === id
-          ? { ...item, quantity }
-          : item
+        (item._id || item.id) === id ? { ...item, quantity } : item
       )
     );
   };
@@ -113,13 +112,10 @@ function App() {
           <Route
             path="/checkout"
             element={
-              <Checkout
-                cartItems={cartItems}
-                setCartItems={setCartItems}
-              />
+              <Checkout cartItems={cartItems} setCartItems={setCartItems} />
             }
           />
-
+          <Route path="/oauth-success" element={<OAuthSuccess />} />
           <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

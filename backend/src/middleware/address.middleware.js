@@ -1,29 +1,31 @@
-export const validateAddress = (req, res, next) => {
-  const {
-    fullName,
-    phone,
-    addressLine1,
-    city,
-    state,
-    pincode,
-  } = req.body;
+import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
 
-  if (!fullName || !phone || !addressLine1 || !city || !state || !pincode) {
-    return res.status(400).json({
-      message: "All required address fields must be provided",
-    });
+export const protect = async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
   }
 
-  const phoneRegex = /^[6-9]\d{9}$/;
-  const pincodeRegex = /^\d{6}$/;
-
-  if (!phoneRegex.test(phone)) {
-    return res.status(400).json({ message: "Invalid phone number" });
+  if (!token) {
+    return res.status(401).json({ message: "Not authorized" });
   }
 
-  if (!pincodeRegex.test(pincode)) {
-    return res.status(400).json({ message: "Invalid pincode" });
-  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select("-password");
 
-  next();
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    req.user = user;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
+  }
 };
