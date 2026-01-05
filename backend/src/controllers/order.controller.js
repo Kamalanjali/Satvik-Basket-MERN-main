@@ -45,7 +45,7 @@ export const createOrder = async (req, res, next) => {
       user: req.user._id,
 
       orderItems: orderItems.map((item) => ({
-        product: item.product,   // ObjectId
+        product: item.product, // ObjectId
         name: item.name,
         price: item.price,
         quantity: item.quantity,
@@ -74,7 +74,6 @@ export const createOrder = async (req, res, next) => {
     next(error);
   }
 };
-
 
 /* ======================================
    USER: Get my orders
@@ -116,6 +115,41 @@ export const getLatestPendingOrder = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch pending order",
+    });
+  }
+};
+
+/* ======================================
+   Get order by ID (admin or owner)
+====================================== */
+export const getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Optional security check (recommended)
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view this order",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      order,
+    });
+  } catch (error) {
+    console.error("GET ORDER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch order",
     });
   }
 };

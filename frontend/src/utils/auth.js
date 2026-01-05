@@ -1,5 +1,10 @@
-export const isLoggedIn = () => {
-  const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
-  return !!(token && user);
+// frontend/src/utils/auth.js
+
+export const isLoggedIn = async (authApi) => {
+  try {
+    await authApi.me();
+    return true;
+  } catch {
+    return false;
+  }
 };

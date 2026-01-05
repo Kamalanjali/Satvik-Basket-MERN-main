@@ -4,6 +4,7 @@ import {
   getAllOrders,
   getMyOrders,
   getLatestPendingOrder,
+  getOrderById,
 } from "../controllers/order.controller.js";
 
 import {
@@ -37,5 +38,11 @@ router.get(
   protect,
   getLatestPendingOrder
 );
+
+/* ===============================
+   Get order by ID (admin or owner)
+=============================== */
+router.get("/:id", protect, getOrderById);   
+
 
 export default router;

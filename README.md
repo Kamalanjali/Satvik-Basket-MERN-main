@@ -1,158 +1,85 @@
-# 🧺 Satvik Basket – MERN E-Commerce Application
+# Satvik Basket (Develop Branch)
 
-Satvik Basket is a full-stack e-commerce application built using the **MERN stack**, focused on real-world payment flows, order lifecycle handling, and clean backend architecture.  
-The project emphasizes **correctness over shortcuts**, especially in payment processing and order management.
+Satvik Basket is a full-stack e-commerce application built using the MERN stack, focused on clean architecture, real-world workflows, and production-ready practices.
 
----
-
-## 🚀 Features
-
-### 🛍️ User Features
-- User authentication (JWT-based)
-- Browse products and add to cart
-- Address management during checkout
-- Secure checkout with **Razorpay (Test Mode)**
-- Retry payment for pending orders
-- Order history with expandable order details
-- Real-time order payment status updates
+This **develop** branch is used for active development and testing before changes are promoted to production.
 
 ---
 
-### 💳 Payments (Razorpay – Test Mode)
-- Backend-driven Razorpay order creation
-- Secure signature verification using HMAC
-- Payment status persisted in database
-- Correct handling of:
-  - Payment success
-  - Payment failure
-  - User-cancelled payments
-- Retry payment option for pending orders
-- Idempotent verification (safe against double callbacks)
-
-> ⚠️ Razorpay is integrated in **test mode only**, as this is a portfolio project.  
-> Live keys are **not required** and intentionally not configured.
-
----
-
-### 📦 Order Lifecycle
-- Order creation before payment
-- Payment status tracking:
-  - `PENDING`
-  - `PAID`
-  - `FAILED`
-- Order status tracking:
-  - `CREATED`
-  - `CONFIRMED`
-  - (future: SHIPPED, DELIVERED)
-
----
-
-## 🧱 Tech Stack
+## Tech Stack
 
 ### Frontend
-- React (Vite)
-- React Router
-- Axios
+- React
 - Tailwind CSS
-- react-hot-toast (notifications)
+- Vite
+- Axios
 
 ### Backend
 - Node.js
 - Express.js
 - MongoDB (Mongoose)
+- Passport.js (Google OAuth)
 - JWT Authentication
-- Razorpay Node SDK
+
+### Infrastructure
+- Backend: Railway
+- Frontend: Vercel
+- Database: MongoDB Atlas
 
 ---
 
-## 🗂️ Project Structure
+## Branch Strategy
 
-Satvik-Basket-MERN
-├── backend
-│ ├── controllers
-│ ├── models
-│ ├── routes
-│ ├── middleware
-│ └── config
-│
-├── frontend
-│ ├── src
-│ │ ├── pages
-│ │ ├── components
-│ │ ├── services
-│ │ └── utils
-│ └── index.html
+- `develop`
+  - Active development branch
+  - All features, fixes, and refactors land here first
+  - Deployed to a staging environment
 
+- `main`
+  - Production branch
+  - Only stable, production-ready code
+  - Deployment is triggered via Pull Request merge from `develop`
 
 ---
 
-## ⚙️ Environment Setup
+## Current Features
 
-### Backend `.env`
-
-PORT=3000
-
-MONGO_URI=your_mongodb_connection_string
-
-JWT_SECRET=your_jwt_secret
-
-RAZORPAY_KEY_ID=rzp_test_xxxxx
-
-RAZORPAY_KEY_SECRET=your_test_secret
-
-
-### Frontend `.env`
-
-VITE_API_BASE_URL=http://localhost:3000/api/v1
-
-VITE_RAZORPAY_KEY_ID=rzp_test_xxxxx
-
-
----
-
-## ▶️ Running Locally
-
-### Backend
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
----
-### 🧪 Razorpay Testing
-
-Use Razorpay test card details:
-
-Card Number: 4111 1111 1111 1111
+- User authentication (JWT + Google OAuth)
+- Product listing and categories
+- Cart and checkout flow
+- Address management
+- Order creation and status handling
+- Guarded Razorpay integration (enabled only when env vars are present)
+- Backend-safe startup with optional services disabled when env vars are missing
 
 Expiry: Any future date
 
-CVV: Any 3 digits
+## Environment Configuration
 
-OTP: 123456
+The backend is designed to **fail gracefully** when optional environment variables are missing.
+
+Required environment variables:
+- MONGO_URI
+- JWT_SECRET
+
+optional (feature - based):
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- RAZORPAY_KEY_ID
+- RAZORPAY_KEY_SECRET
+
+
+If optional variables are missing, related features are disabled without crashing the server.
 
 ---
 
-### 🧠 Engineering Highlights
+## Deployment Flow
 
-- Backend is the single source of truth for payment status
-- No frontend-only payment assumptions
-- Payment verification updates both Payment and Order documents atomically
-- Safe handling of edge cases like:
-    - Cancelled payment after popup opens
-    - Double verification attempts
--Clean separation of concerns between UI, API, and business logic
-
----
-
-### 📌 Future Enhancements
+1. Code is developed and tested on the `develop` branch
+2. A Pull Request is raised from `develop` → `main`
+3. CI checks and deployments run automatically
+4. On successful verification, the PR is merged
+5. Merge to `main` triggers production deployment
 
 - Stock management & inventory locking
 - Admin dashboard (products, orders, analytics)
@@ -161,13 +88,15 @@ OTP: 123456
 - Email notifications
 ---
 
-### 👩‍💻 Author
+## Status
 
-Lakshmi Kamalanjali Mandalika
-Full Stack Engineer | MERN | Cloud Fundamentals
+- Backend: Deployed on Railway
+- Frontend: Deployed on Vercel
+- CI/CD: GitHub Pull Request based workflow
 
 ---
 
-### 📄 License
+## Notes
 
-This project is for learning and portfolio purposes.
+This project is intentionally structured to reflect real-world team workflows, including branch discipline, environment safety, and deployment verification.
+

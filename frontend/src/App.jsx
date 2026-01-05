@@ -1,16 +1,19 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useCallback } from "react";
+import { Toaster } from "react-hot-toast";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
-import Header from "./components/Header";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
-import Addresses from "./pages/Addresses";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
-import { Toaster } from "react-hot-toast";
+
+import Header from "./components/Header";
+import Cart from "./components/Cart";
+import PublicRoute from "./components/PublicRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,6 +28,24 @@ function App() {
     setCartOpen((prev) => !prev);
   }, []);
 
+  // 🔧 Cart item helpers (REQUIRED for Cart.jsx)
+  const updateQuantity = (id, quantity) => {
+    if (quantity <= 0) return;
+    setCartItems((items) =>
+      items.map((item) =>
+        (item._id || item.id) === id
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  };
+
+  const removeItem = (id) => {
+    setCartItems((items) =>
+      items.filter((item) => (item._id || item.id) !== id)
+    );
+  };
+
   const cartItemCount = cartItems.reduce(
     (total, item) => total + item.quantity,
     0
@@ -32,17 +53,22 @@ function App() {
 
   return (
     <>
-      <Toaster position="top-right" reverseOrder={false} />
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
+      <Toaster position="top-right" />
+
+      <BrowserRouter>
         <Header
           onSearch={handleSearch}
           cartItemCount={cartItemCount}
           onCartToggle={handleCartToggle}
+        />
+
+        {/* ✅ CART TOGGLE – GLOBAL */}
+        <Cart
+          isOpen={cartOpen}
+          items={cartItems}
+          onClose={handleCartToggle}
+          onUpdateQuantity={updateQuantity}
+          onRemoveItem={removeItem}
         />
 
         <Routes>
@@ -53,24 +79,49 @@ function App() {
                 searchQuery={searchQuery}
                 cartItems={cartItems}
                 setCartItems={setCartItems}
-                cartOpen={cartOpen}
-                setCartOpen={setCartOpen}
               />
             }
           />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/addresses" element={<Addresses />} />
+
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <Orders />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/checkout"
             element={
-              <Checkout cartItems={cartItems} setCartItems={setCartItems} />
+              <Checkout
+                cartItems={cartItems}
+                setCartItems={setCartItems}
+              />
             }
           />
+
           <Route path="/order-success" element={<OrderSuccess />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </>

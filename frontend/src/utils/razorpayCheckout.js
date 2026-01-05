@@ -44,7 +44,6 @@ export const openRazorpayCheckout = async ({
   const finishSuccess = () => {
     if (finalized) return;
     finalized = true;
-    toast.success("Payment successful 🎉 Order confirmed");
     onSuccess?.();
   };
 
