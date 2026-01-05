@@ -4,7 +4,6 @@ import { Toaster } from "react-hot-toast";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
@@ -69,15 +68,6 @@ function App() {
             element={
               <PublicRoute>
                 <Login />
-              </PublicRoute>
-            }
-          />
-
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
               </PublicRoute>
             }
           />

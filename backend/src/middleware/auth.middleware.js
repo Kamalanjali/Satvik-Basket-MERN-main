@@ -1,7 +1,5 @@
 // middleware/auth.middleware.js
 
-console.log("🔥 AUTH MIDDLEWARE EXECUTED");
-
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 
