@@ -20,6 +20,7 @@ const sendToken = (res, userId, role, rememberMe = false) => {
     secure: true,        // 🔥 REQUIRED
     sameSite: "none",    // 🔥 REQUIRED for Vercel ↔ Railway
     path: "/",
+    domain: ".up.railway.app", // 🔥 REQUIRED for Vercel ↔ Railway
     maxAge: rememberMe
       ? 30 * 24 * 60 * 60 * 1000
       : 60 * 60 * 1000,
@@ -138,6 +139,7 @@ export const logoutUser = async (req, res) => {
     secure: true,
     sameSite: "none",
     path: "/",
+    domain: ".up.railway.app", // 🔥 REQUIRED for Vercel ↔ Railway
   });
 
   res.status(200).json({
