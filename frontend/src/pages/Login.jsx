@@ -23,10 +23,13 @@ function Login() {
   const [resetLoading, setResetLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  
   /* Already logged in */
   useEffect(() => {
-    authApi.me().then(() => navigate("/", { replace: true })).catch(() => {});
+    authApi
+      .me()
+      .then(() => navigate("/", { replace: true }))
+      .catch(() => {});
   }, [navigate]);
 
   /* Login */
@@ -106,10 +109,11 @@ function Login() {
 
           {/* Google */}
           <button
-            onClick={() =>
-              (window.location.href =
-                "http://localhost:3000/api/v1/auth/google")
-            }
+            onClick={() => {
+              window.location.href = `${
+                import.meta.env.VITE_API_BASE_URL
+              }/auth/google`;
+            }}
             className="w-full flex items-center justify-center gap-3 border rounded-md py-2.5 hover:bg-[#f5efe6]"
           >
             <img
