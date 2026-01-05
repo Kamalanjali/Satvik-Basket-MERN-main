@@ -7,7 +7,8 @@ import {
   loginUser,
   getMe,
   logoutUser,
-  resetPassword, // ✅ ADDED
+  resetPassword,
+  updateMe,
 } from "../controllers/auth.controller.js";
 
 import jwt from "jsonwebtoken";
@@ -60,6 +61,7 @@ router.post("/reset-password", resetPassword);
 ================================ */
 
 router.get("/me", protect, getMe);
+router.put("/me", protect, updateMe);
 router.post("/logout", protect, logoutUser);
 
 export default router;

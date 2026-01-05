@@ -173,3 +173,21 @@ export const logoutUser = async (req, res) => {
     message: "Logged out successfully",
   });
 };
+
+/* -------------------- updateMe Controller-------------------- */
+export const updateMe = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-password");
+
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

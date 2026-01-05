@@ -11,6 +11,7 @@ import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 
 import Header from "./components/Header";
+import Cart from "./components/Cart";
 import PublicRoute from "./components/PublicRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -27,6 +28,24 @@ function App() {
     setCartOpen((prev) => !prev);
   }, []);
 
+  // 🔧 Cart item helpers (REQUIRED for Cart.jsx)
+  const updateQuantity = (id, quantity) => {
+    if (quantity <= 0) return;
+    setCartItems((items) =>
+      items.map((item) =>
+        (item._id || item.id) === id
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  };
+
+  const removeItem = (id) => {
+    setCartItems((items) =>
+      items.filter((item) => (item._id || item.id) !== id)
+    );
+  };
+
   const cartItemCount = cartItems.reduce(
     (total, item) => total + item.quantity,
     0
@@ -36,20 +55,23 @@ function App() {
     <>
       <Toaster position="top-right" />
 
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
+      <BrowserRouter>
         <Header
           onSearch={handleSearch}
           cartItemCount={cartItemCount}
           onCartToggle={handleCartToggle}
         />
 
+        {/* ✅ CART TOGGLE – GLOBAL */}
+        <Cart
+          isOpen={cartOpen}
+          items={cartItems}
+          onClose={handleCartToggle}
+          onUpdateQuantity={updateQuantity}
+          onRemoveItem={removeItem}
+        />
+
         <Routes>
-          {/* Public */}
           <Route
             path="/"
             element={
@@ -57,8 +79,6 @@ function App() {
                 searchQuery={searchQuery}
                 cartItems={cartItems}
                 setCartItems={setCartItems}
-                cartOpen={cartOpen}
-                setCartOpen={setCartOpen}
               />
             }
           />
@@ -72,7 +92,6 @@ function App() {
             }
           />
 
-          {/* Protected */}
           <Route
             path="/profile"
             element={
@@ -101,12 +120,7 @@ function App() {
             }
           />
 
-          <Route
-            path="/order-success"
-            element={<OrderSuccess />}
-          />
-
-          {/* 404 */}
+          <Route path="/order-success" element={<OrderSuccess />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

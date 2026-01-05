@@ -1,4 +1,5 @@
 import axios from "axios";
+
 // ===============================
 // Base API Configuration
 // ===============================
@@ -31,7 +32,15 @@ export const authApi = {
   logout: () => api.post("/auth/logout"),
   me: () => api.get("/auth/me"),
   resetPassword: (data) =>
-    api.post("/auth/reset-password",data),
+    api.post("/auth/reset-password", data),
+};
+
+
+// ===============================
+// User API  ✅ NEW (REQUIRED)
+// ===============================
+export const userApi = {
+  updateProfile: (data) => api.put("/auth/me", data),
 };
 
 
@@ -54,18 +63,6 @@ export const orderApi = {
   getMyOrders: () => api.get("/orders/my-orders"),
   getAll: () => api.get("/orders"),
   getById: (id) => api.get(`/orders/${id}`),
-};
-
-
-// ===============================
-// Address API
-// ===============================
-export const addressApi = {
-  getAll: () => api.get("/addresses"),
-  add: (data) => api.post("/addresses", data),
-  update: (id, data) => api.put(`/addresses/${id}`, data),
-  remove: (id) => api.delete(`/addresses/${id}`),
-  setDefault: (id) => api.put(`/addresses/${id}/default`),
 };
 
 
