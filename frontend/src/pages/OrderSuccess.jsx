@@ -20,7 +20,7 @@ function OrderSuccess() {
 
     const fetchOrder = async () => {
       try {
-        const res = await orderApi.getOrderById(orderId);
+        const res = await orderApi.getById(orderId);
         setOrder(res.data.order);
       } catch (error) {
         console.error("Failed to fetch order", error);
@@ -57,6 +57,18 @@ function OrderSuccess() {
         Total Paid: <strong>₹{order.totalAmount}</strong>
       </p>
 
+      <div className="mt-6 rounded bg-white p-4 shadow-sm text-left max-w-md">
+        <h3 className="font-semibold mb-2">Delivered To</h3>
+        <p>{order.shippingAddress.fullName}</p>
+        <p>{order.shippingAddress.addressLine1}</p>
+        <p>
+          {order.shippingAddress.city}, {order.shippingAddress.state} –{" "}
+          {order.shippingAddress.pincode}
+        </p>
+        <p>Phone: {order.shippingAddress.phone}</p>
+      </div>
+      <br />
+      <br />
       <button
         onClick={() => navigate("/orders")}
         className="rounded bg-green-700 px-6 py-3 text-white hover:bg-green-800"

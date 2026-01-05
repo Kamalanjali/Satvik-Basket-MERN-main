@@ -117,11 +117,15 @@ function Checkout({ cartItems, setCartItems }) {
       await openRazorpayCheckout({
         orderId,
         onSuccess: () => {
-          setCartItems([]);
           setPaying(false);
+          
           navigate("/order-success", {
             state: { orderId, totalAmount },
           });
+          // Clear cart After navigation
+          setTimeout(() => {
+            setCartItems([]);
+          }, 0);
         },
         onFailure: () => {
           setPaying(false);
