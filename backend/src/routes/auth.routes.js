@@ -43,7 +43,6 @@ router.get(
       secure: true,       // 🔥 REQUIRED
       sameSite: "none",   // 🔥 REQUIRED
       path: "/",
-      domain: ".up.railway.app", // 🔥 REQUIRED for Vercel ↔ Railway
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 

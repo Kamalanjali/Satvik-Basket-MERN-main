@@ -9,21 +9,16 @@ import path from "path";
 const sendToken = (res, userId, role, rememberMe = false) => {
   const expiresIn = rememberMe ? "30d" : "1h";
 
-  const token = jwt.sign(
-    { userId, role },
-    process.env.JWT_SECRET,
-    { expiresIn }
-  );
+  const token = jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+    expiresIn,
+  });
 
   res.cookie("token", token, {
     httpOnly: true,
-    secure: true,        // 🔥 REQUIRED
-    sameSite: "none",    // 🔥 REQUIRED for Vercel ↔ Railway
+    secure: true, // 🔥 REQUIRED
+    sameSite: "none", // 🔥 REQUIRED for Vercel ↔ Railway
     path: "/",
-    domain: ".up.railway.app", // 🔥 REQUIRED for Vercel ↔ Railway
-    maxAge: rememberMe
-      ? 30 * 24 * 60 * 60 * 1000
-      : 60 * 60 * 1000,
+    maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000,
   });
 };
 
@@ -139,7 +134,6 @@ export const logoutUser = async (req, res) => {
     secure: true,
     sameSite: "none",
     path: "/",
-    domain: ".up.railway.app", // 🔥 REQUIRED for Vercel ↔ Railway
   });
 
   res.status(200).json({
@@ -150,11 +144,10 @@ export const logoutUser = async (req, res) => {
 
 export const updateMe = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select("-password");
+    const user = await User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
 
     res.status(200).json({ user });
   } catch (err) {
