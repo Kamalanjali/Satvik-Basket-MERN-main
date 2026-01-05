@@ -1,156 +1,102 @@
-# 🧺 Satvik Basket – MERN E-Commerce Backend
+# Satvik Basket (Develop Branch)
 
-Satvik Basket is a backend-first MERN e-commerce application designed for selling traditional, satvik home-made food products such as ghee, oils, spice mixes, and batters.
-This repository currently focuses on a robust, production-style backend with clean architecture, authentication, authorization, and core e-commerce flows.
+Satvik Basket is a full-stack e-commerce application built using the MERN stack, focused on clean architecture, real-world workflows, and production-ready practices.
 
-Frontend integration is planned as the next phase.
-
----
-
-## 🚀 Features Implemented (Backend)
-
-### 🔐 Authentication & Authorization
-
-- User registration and login with JWT-based authentication
-- Role-based access control (USER, ADMIN)
-- Protected routes using middleware
-- Admin-only routes for product and order management
-
-### 🧱 Core E-Commerce Modules
-
-- Users – register, login, role management
-- Products
-- Create product (admin-only)
-- Get all products
-- Get product by ID
-- Orders
-- Create order (user/admin)
-- Get logged-in user’s orders
-- Get all orders (admin-only)
-- Payments (Mock Implementation)
-- Create payment
-- Mark payment as success
-- Mark payment as failed
+This **develop** branch is used for active development and testing before changes are promoted to production.
 
 ---
 
-### 🛡️ Middleware & Infrastructure
+## Tech Stack
 
-- Global error handling middleware
-- JWT auth middleware
-- Admin/role-based middleware
-- Environment-based configuration
-- MongoDB connection with Mongoose
-- Clean separation of routes, controllers, models, and middlewares
+### Frontend
+- React
+- Tailwind CSS
+- Vite
+- Axios
 
----
-
-## 🧰 Tech Stack
-
-- Backend
+### Backend
 - Node.js
 - Express.js
-- MongoDB
-- Mongoose
-- JWT (JSON Web Tokens)
-- dotenv
-- Tools
-- Thunder Client / Postman (API testing)
-- Nodemon
-  
----
+- MongoDB (Mongoose)
+- Passport.js (Google OAuth)
+- JWT Authentication
 
-## 📁 Project Structure
-
-backend/
-└── src/
-    ├── config/
-    │   └── db.js
-    ├── controllers/
-    │   ├── auth.controller.js
-    │   ├── product.controller.js
-    │   ├── order.controller.js
-    │   └── payment.controller.js
-    ├── middlewares/
-    │   ├── auth.middleware.js
-    │   ├── role.middleware.js
-    │   └── error.middleware.js
-    ├── models/
-    │   ├── user.model.js
-    │   ├── product.model.js
-    │   ├── order.model.js
-    │   └── payment.model.js
-    ├── routes/
-    │   ├── auth.routes.js
-    │   ├── product.routes.js
-    │   ├── order.routes.js
-    │   └── payment.routes.js
-    ├── utils/
-    │   └── constants.js
-    └── server.js
+### Infrastructure
+- Backend: Railway
+- Frontend: Vercel
+- Database: MongoDB Atlas
 
 ---
 
-## ⚙️ Environment Variables
+## Branch Strategy
 
-Create a .env file in the backend root:
+- `develop`
+  - Active development branch
+  - All features, fixes, and refactors land here first
+  - Deployed to a staging environment
 
-PORT=3000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-NODE_ENV=development
-
-
-.env is ignored via .gitignore
-
----
-
-## ▶️ Running the Backend Locally
-
-cd backend
-npm install
-npm run dev
-
-
-Server will run on:
-
-http://localhost:3000
+- `main`
+  - Production branch
+  - Only stable, production-ready code
+  - Deployment is triggered via Pull Request merge from `develop`
 
 ---
 
-## 🧪 API Testing
+## Current Features
 
-All APIs have been tested using Thunder Client.
-
-- Auth Flow
-- Register user
-- Login user
-- Copy JWT token
-
-Use token in Authorization header for protected routes
-
-Authorization: Bearer <JWT_TOKEN>
-
----
-
-## 📌 Notes
-
-- Payments are mocked intentionally to decouple order flow from real gateways
-- Error handling is centralized and environment-aware
-- Backend is designed to be frozen while frontend is developed
-- Frontend integration will reuse and adapt an existing UI
-
----
-
-## 🛠️ Upcoming Work
-
-- Frontend development (React)
-- UI integration with existing design
+- User authentication (JWT + Google OAuth)
+- Product listing and categories
 - Cart and checkout flow
-- Deployment
+- Address management
+- Order creation and status handling
+- Guarded Razorpay integration (enabled only when env vars are present)
+- Backend-safe startup with optional services disabled when env vars are missing
+
+Expiry: Any future date
+
+## Environment Configuration
+
+The backend is designed to **fail gracefully** when optional environment variables are missing.
+
+Required environment variables:
+- MONGO_URI
+- JWT_SECRET
+
+optional (feature - based):
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- RAZORPAY_KEY_ID
+- RAZORPAY_KEY_SECRET
+
+
+If optional variables are missing, related features are disabled without crashing the server.
 
 ---
 
-## 👩‍💻 Author
+## Deployment Flow
 
-Built with care and clarity as a learning-focused, real-world MERN project.
+1. Code is developed and tested on the `develop` branch
+2. A Pull Request is raised from `develop` → `main`
+3. CI checks and deployments run automatically
+4. On successful verification, the PR is merged
+5. Merge to `main` triggers production deployment
+
+- Stock management & inventory locking
+- Admin dashboard (products, orders, analytics)
+- Order shipment tracking
+- Google OAuth login
+- Email notifications
+---
+
+## Status
+
+- Backend: Deployed on Railway
+- Frontend: Deployed on Vercel
+- CI/CD: GitHub Pull Request based workflow
+
+---
+
+## Notes
+
+This project is intentionally structured to reflect real-world team workflows, including branch discipline, environment safety, and deployment verification.
+
