@@ -2,9 +2,9 @@ import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-/**
- * Helper: issue JWT + cookie
- */
+/* ===============================
+   Helper: issue JWT + cookie
+================================ */
 const sendToken = (res, userId, role, rememberMe = false) => {
   const expiresIn = rememberMe ? "30d" : "1h";
 
@@ -16,8 +16,8 @@ const sendToken = (res, userId, role, rememberMe = false) => {
 
   res.cookie("token", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: true,        // 🔥 REQUIRED
+    sameSite: "none",    // 🔥 REQUIRED for Vercel ↔ Railway
     maxAge: rememberMe
       ? 30 * 24 * 60 * 60 * 1000
       : 60 * 60 * 1000,
@@ -25,7 +25,7 @@ const sendToken = (res, userId, role, rememberMe = false) => {
 };
 
 /* ===============================
-   Register User (Auto-login)
+   Register User
 ================================ */
 export const registerUser = async (req, res, next) => {
   try {
@@ -50,7 +50,6 @@ export const registerUser = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "Registered successfully",
       user: {
         id: user._id,
         name: user.name,
@@ -72,25 +71,18 @@ export const loginUser = async (req, res, next) => {
 
     const user = await User.findOne({ email }).select("+password");
     if (!user || user.provider !== "local") {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     sendToken(res, user._id, user.role, rememberMe);
 
     res.status(200).json({
       success: true,
-      message: "Login successful",
       user: {
         id: user._id,
         name: user.name,
@@ -104,52 +96,32 @@ export const loginUser = async (req, res, next) => {
 };
 
 /* ===============================
-   Forgot Password (SIMPLE v1)
+   Reset Password
 ================================ */
 export const resetPassword = async (req, res, next) => {
   try {
     const { email, newPassword } = req.body;
 
-    if (!email || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and new password are required",
-      });
-    }
-
     const user = await User.findOne({ email });
     if (!user || user.provider !== "local") {
       return res.status(400).json({
-        success: false,
-        message:
-          "Password reset is available only for email-based accounts",
+        message: "Password reset allowed only for email accounts",
       });
     }
 
-    // Update password (hashed by model hook)
     user.password = newPassword;
     await user.save();
 
-    // Auto-login after reset
     sendToken(res, user._id, user.role, true);
 
-    res.status(200).json({
-      success: true,
-      message: "Password reset successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
+    res.status(200).json({ success: true });
   } catch (err) {
     next(err);
   }
 };
 
 /* ===============================
-   Get Logged-in User
+   Session
 ================================ */
 export const getMe = async (req, res) => {
   res.status(200).json({
@@ -158,14 +130,11 @@ export const getMe = async (req, res) => {
   });
 };
 
-/* ===============================
-   Logout User
-================================ */
 export const logoutUser = async (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
+    sameSite: "none",
   });
 
   res.status(200).json({
@@ -174,20 +143,16 @@ export const logoutUser = async (req, res) => {
   });
 };
 
-/* -------------------- updateMe Controller-------------------- */
 export const updateMe = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
+      { new: true, runValidators: true }
     ).select("-password");
 
     res.status(200).json({ user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

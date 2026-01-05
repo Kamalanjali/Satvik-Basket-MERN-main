@@ -13,13 +13,11 @@ import {
 
 import { protect } from "../middleware/auth.middleware.js";
 
-/* ✅ router IS DEFINED HERE */
 const router = express.Router();
 
 /* ===============================
    GOOGLE OAUTH
 ================================ */
-
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -42,22 +40,18 @@ router.get(
 
     res.cookie("token", token, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: true,       // 🔥 REQUIRED
+      sameSite: "none",   // 🔥 REQUIRED
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    const clientUrl =
-      process.env.CLIENT_URL || "http://localhost:5173";
-
-    res.redirect(clientUrl);
+    res.redirect(process.env.CLIENT_URL);
   }
 );
 
 /* ===============================
    LOCAL AUTH
 ================================ */
-
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/reset-password", resetPassword);
@@ -65,10 +59,8 @@ router.post("/reset-password", resetPassword);
 /* ===============================
    SESSION
 ================================ */
-
 router.get("/me", protect, getMe);
 router.put("/me", protect, updateMe);
 router.post("/logout", protect, logoutUser);
 
-/* ✅ DEFAULT EXPORT */
 export default router;
