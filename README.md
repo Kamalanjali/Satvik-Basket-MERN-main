@@ -52,7 +52,7 @@ This **develop** branch is used for active development and testing before change
 - Guarded Razorpay integration (enabled only when env vars are present)
 - Backend-safe startup with optional services disabled when env vars are missing
 
----
+Expiry: Any future date
 
 ## Environment Configuration
 
@@ -81,6 +81,11 @@ If optional variables are missing, related features are disabled without crashin
 4. On successful verification, the PR is merged
 5. Merge to `main` triggers production deployment
 
+- Stock management & inventory locking
+- Admin dashboard (products, orders, analytics)
+- Order shipment tracking
+- Google OAuth login
+- Email notifications
 ---
 
 ## Status
