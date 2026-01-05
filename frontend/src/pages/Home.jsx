@@ -86,7 +86,13 @@ function Home({ searchQuery, cartItems, setCartItems, cartOpen, setCartOpen }) {
           );
         }
 
-        return [...prev, { ...product, quantity: 1 }];
+        return [
+          ...prev, 
+          { ...product, 
+            image:
+            product.image || product.imageUrl || product.images?.[0] || null,
+            quantity: 1,
+          }];
       });
     },
     [setCartItems]
