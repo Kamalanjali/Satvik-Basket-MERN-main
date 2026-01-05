@@ -1,6 +1,6 @@
 import express from "express";
 import passport from "passport";
-import { protect } from "../middleware/auth.middleware.js";
+import jwt from "jsonwebtoken";
 
 import {
   registerUser,
@@ -11,24 +11,29 @@ import {
   updateMe,
 } from "../controllers/auth.controller.js";
 
-import jwt from "jsonwebtoken";
+import { protect } from "../middleware/auth.middleware.js";
 
+/* ✅ router IS DEFINED HERE */
 const router = express.Router();
 
 /* ===============================
-   Google OAuth
+   GOOGLE OAUTH
 ================================ */
 
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })
 );
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", { session: false }),
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: "/login",
+  }),
   (req, res) => {
-    // OAuth logins = long-lived session
     const token = jwt.sign(
       { userId: req.user._id, role: req.user.role },
       process.env.JWT_SECRET,
@@ -42,26 +47,28 @@ router.get(
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    res.redirect("http://localhost:5173");
+    const clientUrl =
+      process.env.CLIENT_URL || "http://localhost:5173";
+
+    res.redirect(clientUrl);
   }
 );
 
 /* ===============================
-   Local Auth
+   LOCAL AUTH
 ================================ */
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-
-// 🔐 SIMPLE FORGOT PASSWORD (EMAIL ONLY)
 router.post("/reset-password", resetPassword);
 
 /* ===============================
-   Session
+   SESSION
 ================================ */
 
 router.get("/me", protect, getMe);
 router.put("/me", protect, updateMe);
 router.post("/logout", protect, logoutUser);
 
+/* ✅ DEFAULT EXPORT */
 export default router;
