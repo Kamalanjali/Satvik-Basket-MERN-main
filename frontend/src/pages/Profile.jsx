@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { authApi, userApi } from "../services/api";
 import { Pencil, Trash2, Star } from "lucide-react";
 import toast from "react-hot-toast";
@@ -20,6 +21,8 @@ const sortAddresses = (addresses, defaultId) => [
 ];
 
 function Profile() {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [addresses, setAddresses] = useState([]);
   const [defaultAddressId, setDefaultAddressId] = useState(null);
@@ -28,26 +31,37 @@ function Profile() {
 
   /* ---------------- load user ---------------- */
   const loadUser = async () => {
-    const res = await authApi.me();
-    const u = res.data.user;
+    try {
+      const res = await authApi.me();
+      const u = res.data.user;
 
-    setUser(u);
-    setAddresses(u.addresses || []);
-    setDefaultAddressId(u.defaultAddress || null);
+      setUser(u);
+      setAddresses(u.addresses || []);
+      setDefaultAddressId(u.defaultAddress || null);
+    } catch (err) {
+      // 🔐 token invalid / expired → force logout
+      localStorage.removeItem("token");
+      navigate("/login", { replace: true });
+    }
   };
 
   useEffect(() => {
     loadUser().finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---------------- persist profile ---------------- */
   const persistProfile = async (updatedAddresses, newDefault) => {
-    await userApi.updateProfile({
-      addresses: updatedAddresses,
-      defaultAddress: newDefault,
-    });
+    try {
+      await userApi.updateProfile({
+        addresses: updatedAddresses,
+        defaultAddress: newDefault,
+      });
 
-    await loadUser();
+      await loadUser();
+    } catch {
+      toast.error("Failed to update profile");
+    }
   };
 
   /* ---------------- save address ---------------- */
@@ -67,12 +81,10 @@ function Profile() {
     let updated;
 
     if (form._id) {
-      // edit
       updated = addresses.map((a) =>
         a._id === form._id ? { ...a, ...form } : a
       );
     } else {
-      // add (Mongo will create _id)
       updated = [...addresses, form];
     }
 
@@ -103,6 +115,7 @@ function Profile() {
   };
 
   if (loading) return <p className="p-8">Loading…</p>;
+  if (!user) return null;
 
   const sorted = sortAddresses(addresses, defaultAddressId);
 
@@ -159,13 +172,12 @@ function Profile() {
                     className="p-1 rounded hover:bg-green-100"
                     title="Set as default"
                   >
-                    <Star size={16} className="text-green-700"/>
+                    <Star size={16} className="text-green-700" />
                   </button>
                 )}
 
                 <button
                   onClick={() => setForm(addr)}
-                  className="text-blue-600 flex items-center gap-1"
                   title="Edit address"
                 >
                   <Pencil size={16} className="text-gray-600 hover:text-gray-800" />
@@ -173,7 +185,6 @@ function Profile() {
 
                 <button
                   onClick={() => handleDelete(addr._id)}
-                  className="p-1 rounded hover:bg-red-100"
                   title="Delete address"
                 >
                   <Trash2 size={14} className="text-red-600 hover:text-red-700" />
@@ -189,7 +200,9 @@ function Profile() {
                   key={f}
                   placeholder={f}
                   value={form[f] || ""}
-                  onChange={(e) => setForm({ ...form, [f]: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, [f]: e.target.value })
+                  }
                   className="border p-2 rounded"
                 />
               ))}

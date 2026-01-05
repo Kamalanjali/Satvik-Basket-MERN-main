@@ -1,11 +1,10 @@
 import { useEffect, useState, useRef } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart } from "lucide-react";
 import { authApi } from "../services/api";
 
 function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const dropdownRef = useRef(null);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,31 +12,42 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // 🔐 ALWAYS re-check auth on navigation (OAuth-safe)
+  /* ===============================
+     Fetch user ONCE if token exists
+  ================================ */
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await authApi.me();
-        setUser(res.data.user);
-      } catch {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setLoadingAuth(false);
+      setUser(null);
+      return;
+    }
+
+    authApi
+      .me()
+      .then((res) => setUser(res.data.user))
+      .catch(() => {
+        // token invalid → hard logout
+        localStorage.removeItem("token");
         setUser(null);
-      } finally {
-        setLoadingAuth(false);
-      }
-    };
+      })
+      .finally(() => setLoadingAuth(false));
+  }, []);
 
-    fetchUser();
-  }, [location.pathname]); // 🔥 THIS IS THE FIX
-
-  // Close profile dropdown on outside click
+  /* ===============================
+     Close dropdown on outside click
+  ================================ */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setProfileOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSearchChange = (e) => {
@@ -51,14 +61,11 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
     onSearch?.(searchQuery);
   };
 
-  const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } finally {
-      setUser(null);
-      setProfileOpen(false);
-      navigate("/login", { replace: true });
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    setProfileOpen(false);
+    navigate("/login", { replace: true });
   };
 
   const getInitials = (name = "") => {
@@ -73,7 +80,10 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-serif font-bold text-green-800">
+          <Link
+            to="/"
+            className="text-2xl font-serif font-bold text-green-800"
+          >
             Satvik Basket
           </Link>
 
@@ -100,8 +110,7 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
             {/* Cart */}
             <button
               onClick={onCartToggle}
-              className="relative rounded-md border border-[#e6d9c8] bg-white p-2
-                         hover:bg-[#f5efe6]"
+              className="relative rounded-md border border-[#e6d9c8] bg-white p-2 hover:bg-[#f5efe6]"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartItemCount > 0 && (

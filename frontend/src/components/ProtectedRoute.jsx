@@ -1,20 +1,17 @@
-import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { authApi } from "../services/api";
 
+/**
+ * ProtectedRoute
+ * Token-based guard (NO API CALLS)
+ */
 function ProtectedRoute({ children }) {
-  const [allowed, setAllowed] = useState(null);
+  const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    authApi
-      .me()
-      .then(() => setAllowed(true))   // logged in
-      .catch(() => setAllowed(false)); // not logged in
-  }, []);
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-  if (allowed === null) return null; // or loader
-
-  return allowed ? children : <Navigate to="/login" replace />;
+  return children;
 }
 
 export default ProtectedRoute;
