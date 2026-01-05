@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import path from "path";
 
 /* ===============================
    Helper: issue JWT + cookie
@@ -18,6 +19,7 @@ const sendToken = (res, userId, role, rememberMe = false) => {
     httpOnly: true,
     secure: true,        // 🔥 REQUIRED
     sameSite: "none",    // 🔥 REQUIRED for Vercel ↔ Railway
+    path: "/",
     maxAge: rememberMe
       ? 30 * 24 * 60 * 60 * 1000
       : 60 * 60 * 1000,
@@ -135,6 +137,7 @@ export const logoutUser = async (req, res) => {
     httpOnly: true,
     secure: true,
     sameSite: "none",
+    path: "/",
   });
 
   res.status(200).json({

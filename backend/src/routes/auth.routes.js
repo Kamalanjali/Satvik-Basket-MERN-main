@@ -42,6 +42,7 @@ router.get(
       httpOnly: true,
       secure: true,       // 🔥 REQUIRED
       sameSite: "none",   // 🔥 REQUIRED
+      path: "/",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 

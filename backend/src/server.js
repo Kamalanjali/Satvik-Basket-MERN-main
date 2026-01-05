@@ -18,6 +18,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 import errorHandler from "./middleware/error.middleware.js";
 
 const app = express();
+app.set("trust proxy", 1); // for secure cookies behind proxies
 const PORT = process.env.PORT || 3000;
 
 /* ---------------- MIDDLEWARE ---------------- */
