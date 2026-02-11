@@ -1,102 +1,176 @@
-# Satvik Basket (Develop Branch)
+# 🛒 Satvik Basket
 
-Satvik Basket is a full-stack e-commerce application built using the MERN stack, focused on clean architecture, real-world workflows, and production-ready practices.
+A full-stack MERN e-commerce platform bringing traditional Indian kitchen essentials online.
 
-This **develop** branch is used for active development and testing before changes are promoted to production.
+🌐 **Live Demo:** https://satvikbasket.vercel.app  
+⚠️ *Backend is hosted on a free-tier service and may take a few seconds to wake up on first request.*
 
 ---
 
-## Tech Stack
+## 🚀 Features
+
+### 🔐 Authentication
+- Google OAuth 2.0 login
+- Email/password authentication
+- JWT-based stateless authentication
+- Protected routes
+- Password reset & update flow
+- Secure token-based session handling
+
+### 🛍 E-Commerce Flow
+- Product listing & filtering
+- Add to cart
+- Protected checkout
+- Address management (CRUD)
+- Order creation
+- Order history
+- Order ownership validation
+
+### 💳 Payments
+- Razorpay payment integration
+- Secure order verification
+- Reload-safe order success page
+- Payment status handling
+
+### 🧠 Architecture Highlights
+- Stateless JWT auth (no sessions, no cookies)
+- Backend ownership validation for orders
+- OAuth callback handling via backend
+- Environment-based configuration management
+- Production-ready deployment setup
+
+---
+
+## 🏗 Tech Stack
 
 ### Frontend
-- React
-- Tailwind CSS
-- Vite
+- React (Vite)
+- React Router
 - Axios
+- Tailwind CSS
+- React Hot Toast
 
 ### Backend
 - Node.js
 - Express.js
-- MongoDB (Mongoose)
+- MongoDB + Mongoose
 - Passport.js (Google OAuth)
 - JWT Authentication
 
-### Infrastructure
-- Backend: Railway
+### External Services
+- Google OAuth 2.0
+- Razorpay
+- MongoDB Atlas
+
+### Deployment
 - Frontend: Vercel
+- Backend: Render
 - Database: MongoDB Atlas
 
 ---
 
-## Branch Strategy
+## 🔁 Authentication Flow
 
-- `develop`
-  - Active development branch
-  - All features, fixes, and refactors land here first
-  - Deployed to a staging environment
+1. User logs in via Google or email.
+2. Backend generates JWT.
+3. Token stored in `localStorage`.
+4. Frontend attaches token in Authorization header.
+5. Backend verifies JWT on protected routes.
 
-- `main`
-  - Production branch
-  - Only stable, production-ready code
-  - Deployment is triggered via Pull Request merge from `develop`
+**No sessions. No cookies. Fully stateless authentication.**
 
 ---
 
-## Current Features
+## 💳 Payment Flow
 
-- User authentication (JWT + Google OAuth)
-- Product listing and categories
-- Cart and checkout flow
-- Address management
-- Order creation and status handling
-- Guarded Razorpay integration (enabled only when env vars are present)
-- Backend-safe startup with optional services disabled when env vars are missing
-
-Expiry: Any future date
-
-## Environment Configuration
-
-The backend is designed to **fail gracefully** when optional environment variables are missing.
-
-Required environment variables:
-- MONGO_URI
-- JWT_SECRET
-
-optional (feature - based):
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
-- RAZORPAY_KEY_ID
-- RAZORPAY_KEY_SECRET
-
-
-If optional variables are missing, related features are disabled without crashing the server.
+1. User adds products to cart.
+2. Checkout requires authentication.
+3. Order created with `PENDING` payment status.
+4. Razorpay checkout initiated.
+5. On success:
+   - Payment verified
+   - Order status updated
+   - Redirect to `/order-success/:orderId`
+6. Order success page is reload-safe.
 
 ---
 
-## Deployment Flow
+## 📂 Project Structure
 
-1. Code is developed and tested on the `develop` branch
-2. A Pull Request is raised from `develop` → `main`
-3. CI checks and deployments run automatically
-4. On successful verification, the PR is merged
-5. Merge to `main` triggers production deployment
+Satvik-Basket/
+│
+├── frontend/ # React + Vite app
+├── backend/ # Express server
+│ ├── controllers/
+│ ├── routes/
+│ ├── middleware/
+│ ├── models/
+│ └── config/
+│
+└── README.md
 
-- Stock management & inventory locking
-- Admin dashboard (products, orders, analytics)
-- Order shipment tracking
-- Google OAuth login
-- Email notifications
----
-
-## Status
-
-- Backend: Deployed on Railway
-- Frontend: Deployed on Vercel
-- CI/CD: GitHub Pull Request based workflow
 
 ---
 
-## Notes
+## ⚙️ Environment Variables
 
-This project is intentionally structured to reflect real-world team workflows, including branch discipline, environment safety, and deployment verification.
+### Backend (.env)
 
+PORT=3000
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_CALLBACK_URL=your_backend_callback_url
+CLIENT_URL=your_frontend_url
+
+RAZORPAY_KEY_ID=your_key
+RAZORPAY_SECRET=your_secret
+
+
+### Frontend (.env)
+
+VITE_API_BASE_URL=https://your-backend-url/api/v1
+
+
+---
+
+## 🧪 Running Locally
+
+### Backend
+cd backend
+npm install
+npm run dev
+
+### Frontend
+cd frontend
+npm install
+npm run dev
+
+---
+
+## 🔒 Security Considerations
+
+1) JWT-based authentication
+2) Route-level protection middleware
+3) Order ownership verification
+4) Password hashing with bcrypt
+5) Environment variable separation for production
+6) No sensitive secrets stored in repository
+
+---
+
+## 📈 Future Improvements
+
+1) Admin dashboard for order management
+2) Inventory management
+3) Email notifications
+4) Payment failure retry handling
+5) Product analytics dashboard
+
+---
+
+### 👩‍💻 Author
+
+Kamalanjali
