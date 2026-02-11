@@ -12,7 +12,7 @@ function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem }) {
 
   const handleCheckout = () => {
     if (!isLoggedIn()) {
-    navigate("/login");
+    navigate("/login?redirect=/checkout");
     return;
   }
     onClose();

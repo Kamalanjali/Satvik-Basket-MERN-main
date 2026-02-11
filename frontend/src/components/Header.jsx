@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart } from "lucide-react";
 import { authApi } from "../services/api";
+import { subscribeAuth } from "../utils/authStore";
 
 function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
   const navigate = useNavigate();
@@ -15,24 +16,23 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
   /* ===============================
      Fetch user ONCE if token exists
   ================================ */
+
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setLoadingAuth(false);
-      setUser(null);
-      return;
-    }
-
-    authApi
-      .me()
-      .then((res) => setUser(res.data.user))
-      .catch(() => {
-        // token invalid → hard logout
-        localStorage.removeItem("token");
+    const fetchUser = async () => {
+      try {
+        const res = await authApi.me();
+        setUser(res.data.user);
+      } catch {
         setUser(null);
-      })
-      .finally(() => setLoadingAuth(false));
+      } finally {
+        setLoadingAuth(false);
+      }
+    };
+
+    fetchUser();
+
+    const unsubscribe = subscribeAuth(fetchUser);
+    return unsubscribe;
   }, []);
 
   /* ===============================
@@ -46,8 +46,7 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSearchChange = (e) => {
@@ -80,10 +79,7 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
-          <Link
-            to="/"
-            className="text-2xl font-serif font-bold text-green-800"
-          >
+          <Link to="/" className="text-2xl font-serif font-bold text-green-800">
             Satvik Basket
           </Link>
 
@@ -114,8 +110,10 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
             >
               <ShoppingCart className="h-5 w-5" />
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center
-                                 justify-center rounded-full bg-green-700 text-xs text-white">
+                <span
+                  className="absolute -top-1 -right-1 flex h-5 w-5 items-center
+                                 justify-center rounded-full bg-green-700 text-xs text-white"
+                >
                   {cartItemCount}
                 </span>
               )}
@@ -141,8 +139,10 @@ function Header({ onSearch, cartItemCount = 0, onCartToggle }) {
                 </button>
 
                 {profileOpen && (
-                  <div className="absolute right-0 mt-2 w-60 rounded-md bg-white
-                                  border border-[#e6d9c8] shadow-lg">
+                  <div
+                    className="absolute right-0 mt-2 w-60 rounded-md bg-white
+                                  border border-[#e6d9c8] shadow-lg"
+                  >
                     <div className="px-4 py-3 border-b">
                       <p className="text-sm font-medium">{user.name}</p>
                       <p className="text-xs text-[#6b4f3f]">{user.email}</p>

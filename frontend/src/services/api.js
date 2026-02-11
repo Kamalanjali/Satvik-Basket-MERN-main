@@ -74,6 +74,8 @@ export const productApi = {
 export const orderApi = {
   create: (data) => api.post("/orders", data),
   getMyOrders: () => api.get("/orders/my-orders"),
+  getById: (id) => api.get(`/orders/${id}`),
+
 };
 
 /* ===============================

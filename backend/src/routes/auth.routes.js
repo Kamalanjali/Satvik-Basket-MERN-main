@@ -39,8 +39,8 @@ router.get(
     );
 
     res.redirect(
-      `${process.env.CLIENT_URL}/oauth-success?token=${token}`
-    );
+      `${process.env.CLIENT_URL}/oauth-success?token=${token}`);
+    
   }
 );
 

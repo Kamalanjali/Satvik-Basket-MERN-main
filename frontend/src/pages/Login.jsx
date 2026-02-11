@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowLeft, X } from "lucide-react";
 import { authApi } from "../services/api";
+import { notifyAuthChanged } from "../utils/authStore"; 
 
 function Login() {
   const navigate = useNavigate();
@@ -51,7 +52,8 @@ function Login() {
     try {
       setLoading(true);
       await authApi.login({ email, password, rememberMe });
-      navigate("/");
+      notifyAuthChanged();
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {

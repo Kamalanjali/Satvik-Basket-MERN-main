@@ -9,13 +9,19 @@ export default function OAuthSuccess() {
     const token = params.get("token");
 
     if (!token) {
-      navigate("/login");
+      navigate("/login", { replace: true });
       return;
     }
 
+    // 🔐 Save token
     localStorage.setItem("token", token);
-    navigate("/");
-  }, []);
+
+    // 🔄 Force auth-aware components to re-evaluate
+    window.dispatchEvent(new Event("auth-changed"));
+
+    // 🚀 Go home
+    navigate("/", { replace: true });
+  }, [navigate]);
 
   return <p>Signing you in…</p>;
 }

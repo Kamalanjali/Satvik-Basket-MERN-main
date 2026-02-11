@@ -1,13 +1,12 @@
 import dotenv from "dotenv";
-dotenv.config(); // ✅ MUST be first
+dotenv.config();
 
 import express from "express";
 import cors from "cors";
 import passport from "passport";
-import cookieParser from "cookie-parser";
 
 import connectDB from "./config/db.js";
-import "./config/passport.js"; // now env is already loaded
+import "./config/passport.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
@@ -18,14 +17,17 @@ import paymentRoutes from "./routes/payment.routes.js";
 import errorHandler from "./middleware/error.middleware.js";
 
 const app = express();
-app.set("trust proxy", 1); // for secure cookies behind proxies
 const PORT = process.env.PORT || 3000;
 
 /* ---------------- MIDDLEWARE ---------------- */
+
+// JSON parser
 app.use(express.json());
-app.use(cookieParser());
+
+// Passport (JWT strategy only, no sessions)
 app.use(passport.initialize());
 
+// CORS configuration
 const allowedOrigins = [
   "http://localhost:5173",
   "https://satvikbasket.vercel.app",
@@ -33,36 +35,52 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("CORS not allowed"));
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow Postman / server-to-server
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
     },
-    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 /* ---------------- ROUTES ---------------- */
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 
-/* ---------------- HEALTH ---------------- */
+/* ---------------- HEALTH CHECK ---------------- */
+
 app.get("/", (req, res) => {
-  res.send("🚀 Satvik Basket API running");
+  res.status(200).json({
+    success: true,
+    message: "🚀 Satvik Basket API running",
+  });
 });
 
-/* ---------------- ERROR ---------------- */
+/* ---------------- ERROR HANDLER ---------------- */
+
 app.use(errorHandler);
 
-/* ---------------- START ---------------- */
+/* ---------------- START SERVER ---------------- */
+
 const startServer = async () => {
-  await connectDB();
-  app.listen(PORT, () =>
-    console.log(`🚀 Server running on port ${PORT}`)
-  );
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Server failed to start:", error.message);
+    process.exit(1);
+  }
 };
 
 startServer();

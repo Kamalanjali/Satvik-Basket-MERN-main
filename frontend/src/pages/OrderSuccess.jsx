@@ -1,24 +1,16 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { orderApi } from "../services/api";
 
 function OrderSuccess() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { orderId } = useParams();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const orderId = location.state?.orderId;
-
   useEffect(() => {
-    // If user lands here without an orderId, kick them out
-    if (!orderId) {
-      navigate("/", { replace: true });
-      return;
-    }
-
-    const fetchOrder = async () => {
+      const fetchOrder = async () => {
       try {
         const res = await orderApi.getById(orderId);
         setOrder(res.data.order);
