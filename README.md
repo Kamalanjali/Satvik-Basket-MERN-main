@@ -1,176 +1,437 @@
 # 🛒 Satvik Basket
 
-A full-stack MERN e-commerce platform bringing traditional Indian kitchen essentials online.
+![React](https://img.shields.io/badge/Frontend-React-blue)
+![Node.js](https://img.shields.io/badge/Backend-Node.js-green)
+![MongoDB](https://img.shields.io/badge/Database-MongoDB-brightgreen)
+![Express](https://img.shields.io/badge/API-Express-black)
+![JWT](https://img.shields.io/badge/Auth-JWT-orange)
+![Render](https://img.shields.io/badge/Backend%20Deployment-Render-purple)
+![Vercel](https://img.shields.io/badge/Frontend%20Deployment-Vercel-black)
 
-🌐 **Live Demo:** https://satvikbasket.vercel.app  
-⚠️ *Backend is hosted on a free-tier service and may take a few seconds to wake up on first request.*
+A production-oriented full-stack MERN e-commerce platform for traditional Indian kitchen essentials.
+
+Built with a strong focus on:
+- scalable backend architecture
+- production engineering practices
+- operational monitoring
+- authentication security
+- reliability and maintainability
+
+🌐 **Live Demo:** [Satvik Basket](https://satvikbasket.vercel.app)
+
+📡 Production monitoring enabled using Sentry and UptimeRobot.
+
+⚠️ Backend is hosted on a free-tier service and may take a few seconds to wake up on the first request.
 
 ---
 
-## 🚀 Features
+# 🎯 Project Goal
 
-### 🔐 Authentication
-- Google OAuth 2.0 login
+The goal of Satvik Basket is not only to build a functional e-commerce platform, but also to progressively evolve it into a production-oriented MERN application with real-world backend engineering practices including monitoring, security hardening, validation, logging, and operational reliability.
+
+---
+
+# 📚 Table of Contents
+
+- [Features](#-features)
+- [Production Engineering Improvements](#-production-engineering-improvements)
+- [Tech Stack](#-tech-stack)
+- [Authentication Flow](#-authentication-flow)
+- [Payment Flow](#-payment-flow)
+- [Monitoring & Health Checks](#-monitoring--health-checks)
+- [Backend Architecture](#-backend-architecture)
+- [Project Structure](#-project-structure)
+- [Environment Variables](#️-environment-variables)
+- [Running Locally](#-running-locally)
+- [Security Considerations](#-security-considerations)
+- [Future Improvements](#-future-improvements)
+
+---
+
+# 🚀 Features
+
+## 🔐 Authentication & Authorization
+
+- Google OAuth 2.0 authentication
 - Email/password authentication
 - JWT-based stateless authentication
 - Protected routes
-- Password reset & update flow
-- Secure token-based session handling
-
-### 🛍 E-Commerce Flow
-- Product listing & filtering
-- Add to cart
-- Protected checkout
-- Address management (CRUD)
-- Order creation
-- Order history
-- Order ownership validation
-
-### 💳 Payments
-- Razorpay payment integration
-- Secure order verification
-- Reload-safe order success page
-- Payment status handling
-
-### 🧠 Architecture Highlights
-- Stateless JWT auth (no sessions, no cookies)
-- Backend ownership validation for orders
-- OAuth callback handling via backend
-- Environment-based configuration management
-- Production-ready deployment setup
+- Password reset flow
+- User profile update flow
+- Secure token-based API authorization
+- Route-level authorization middleware
 
 ---
 
-## 🏗 Tech Stack
+## 🛍 E-Commerce Functionality
 
-### Frontend
+- Product listing
+- Product filtering
+- Add to cart
+- Cart persistence
+- Protected checkout flow
+- Address management (CRUD)
+- Order creation and management
+- Order history
+- Order ownership validation
+- Reload-safe order success flow
+
+---
+
+## 💳 Payment Integration
+
+- Razorpay payment gateway integration
+- Secure payment verification
+- Payment status handling
+- Backend payment verification
+- Order/payment synchronization
+
+---
+
+# 🛠 Production Engineering Improvements
+
+This project was progressively refactored from a basic MERN application into a more production-oriented full-stack system.
+
+---
+
+## ✅ Backend Reliability
+
+- Centralized error handling middleware
+- Consistent API response structure
+- Async error wrapper utilities
+- Graceful shutdown handling
+- Process-level exception handling
+- Production-safe error masking
+
+---
+
+## ✅ Validation & API Safety
+
+- Zod-based request validation
+- Validation middleware before controllers
+- Safer payload handling
+- Consistent validation error responses
+- Cleaner request lifecycle architecture
+
+---
+
+## ✅ Security Hardening
+
+- Helmet security headers
+- API rate limiting
+- HPP (HTTP Parameter Pollution) protection
+- JWT authentication hardening
+- Request payload size limiting
+- Sensitive header redaction in logs
+- Secure environment variable handling
+
+---
+
+## ✅ Monitoring & Observability
+
+- Structured request logging using Pino
+- Sentry integration for runtime exception monitoring
+- `/health` endpoint for operational diagnostics
+- UptimeRobot uptime monitoring
+- Request lifecycle visibility
+- Production diagnostics and debugging support
+
+---
+
+## ✅ Operational Improvements
+
+- Cleaner middleware architecture
+- Improved backend request flow
+- Better auth flow handling
+- Faster and more stable product loading
+- Improved production debugging workflow
+
+---
+
+# 🏗 Tech Stack
+
+## Frontend
+
 - React (Vite)
 - React Router
 - Axios
 - Tailwind CSS
 - React Hot Toast
 
-### Backend
+---
+
+## Backend
+
 - Node.js
 - Express.js
-- MongoDB + Mongoose
-- Passport.js (Google OAuth)
+- MongoDB
+- Mongoose
+- Passport.js
 - JWT Authentication
+- Zod Validation
+- Pino Logger
 
-### External Services
+---
+
+## External Services
+
 - Google OAuth 2.0
 - Razorpay
 - MongoDB Atlas
-
-### Deployment
-- Frontend: Vercel
-- Backend: Render
-- Database: MongoDB Atlas
+- Sentry
+- UptimeRobot
 
 ---
 
-## 🔁 Authentication Flow
+## Deployment
 
-1. User logs in via Google or email.
-2. Backend generates JWT.
+| Service | Platform |
+|---|---|
+| Frontend | Vercel |
+| Backend | Render |
+| Database | MongoDB Atlas |
+
+---
+
+# 🔁 Authentication Flow
+
+1. User logs in using Google OAuth or email/password.
+2. Backend generates JWT token.
 3. Token stored in `localStorage`.
-4. Frontend attaches token in Authorization header.
-5. Backend verifies JWT on protected routes.
-
-**No sessions. No cookies. Fully stateless authentication.**
+4. Frontend attaches JWT in Authorization header.
+5. Backend validates JWT on protected routes.
 
 ---
 
-## 💳 Payment Flow
+## Authentication Architecture
+
+- Stateless authentication
+- No server-side sessions
+- No cookies
+- Token-based authorization flow
+
+---
+
+# 💳 Payment Flow
 
 1. User adds products to cart.
 2. Checkout requires authentication.
-3. Order created with `PENDING` payment status.
-4. Razorpay checkout initiated.
-5. On success:
-   - Payment verified
-   - Order status updated
-   - Redirect to `/order-success/:orderId`
-6. Order success page is reload-safe.
+3. Backend creates order with `PENDING` payment state.
+4. Razorpay checkout session starts.
+5. Payment verification handled on backend.
+6. Order updated after successful verification.
+7. User redirected to reload-safe success page.
 
 ---
 
-## 📂 Project Structure
+# 📡 Monitoring & Health Checks
 
+## Health Endpoint
+
+The backend exposes a production health endpoint:
+
+```http
+GET /health
+```
+
+Returns:
+- API status
+- Database connection status
+- Server uptime
+- Runtime diagnostics
+- Timestamp
+
+---
+
+## Monitoring Stack
+
+### Sentry
+
+Used for:
+- runtime exception tracking
+- stack trace debugging
+- production diagnostics
+
+---
+
+### UptimeRobot
+
+Used for:
+- uptime monitoring
+- downtime detection
+- operational heartbeat checks
+
+---
+
+### Pino
+
+Used for:
+- structured request logging
+- request tracing
+- backend diagnostics
+
+---
+
+# 🧠 Backend Architecture
+
+```txt
+Client
+↓
+Express Server
+↓
+Security Middleware
+(helmet, hpp, rate limiting)
+↓
+Pino Request Logging
+↓
+Validation Layer (Zod)
+↓
+Controllers
+↓
+MongoDB
+↓
+Centralized Error Middleware
+↓
+Sentry + Logs
+```
+
+---
+
+# 📂 Project Structure
+
+```txt
 Satvik-Basket/
 │
-├── frontend/ # React + Vite app
-├── backend/ # Express server
-│ ├── controllers/
-│ ├── routes/
-│ ├── middleware/
-│ ├── models/
-│ └── config/
+├── frontend/
+│   └── React + Vite frontend
+│
+├── backend/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── utils/
+│   ├── validations/
+│   └── server.js
 │
 └── README.md
-
+```
 
 ---
 
-## ⚙️ Environment Variables
+# ⚙️ Environment Variables
 
-### Backend (.env)
+## Backend (.env)
 
+```env
 PORT=3000
+
 MONGO_URI=your_mongodb_uri
+
 JWT_SECRET=your_jwt_secret
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_CALLBACK_URL=your_backend_callback_url
+
 CLIENT_URL=your_frontend_url
 
 RAZORPAY_KEY_ID=your_key
 RAZORPAY_SECRET=your_secret
 
-
-### Frontend (.env)
-
-VITE_API_BASE_URL=https://your-backend-url/api/v1
-
+SENTRY_DSN=your_sentry_dsn
+```
 
 ---
 
-## 🧪 Running Locally
+## Frontend (.env)
 
-### Backend
+```env
+VITE_API_BASE_URL=https://your-backend-url/api/v1
+```
+
+---
+
+# 🧪 Running Locally
+
+## Backend
+
+```bash
 cd backend
 npm install
 npm run dev
+```
 
-### Frontend
+---
+
+## Frontend
+
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
 ---
 
-## 🔒 Security Considerations
+# 🔒 Security Considerations
 
-1) JWT-based authentication
-2) Route-level protection middleware
-3) Order ownership verification
-4) Password hashing with bcrypt
-5) Environment variable separation for production
-6) No sensitive secrets stored in repository
-
----
-
-## 📈 Future Improvements
-
-1) Admin dashboard for order management
-2) Inventory management
-3) Email notifications
-4) Payment failure retry handling
-5) Product analytics dashboard
+- JWT-based authentication
+- Route-level authorization middleware
+- Order ownership validation
+- Password hashing using bcrypt
+- Rate limiting against abuse
+- Security headers using Helmet
+- Request payload limits
+- Environment variable separation
+- Sensitive log redaction
+- Stateless backend architecture
 
 ---
 
-### 👩‍💻 Author
+# 📈 Future Improvements
 
-Kamalanjali
+## Backend
+
+- Database indexing optimization
+- Pagination and caching
+- API performance optimization
+- Background job processing
+- Advanced monitoring
+
+---
+
+## Frontend
+
+- Skeleton loading states
+- Better mobile responsiveness
+- Improved accessibility
+- Better empty/error states
+
+---
+
+## DevOps & Engineering
+
+- CI/CD pipeline
+- Dockerization
+- Automated testing
+- API documentation
+- Performance analytics
+
+---
+
+# 👩‍💻 Author
+
+### Kamalanjali
+
+Full-stack developer focused on:
+- Backend engineering
+- Production systems
+- Scalable web applications
+- Cloud & operational tooling
+
+🔗 LinkedIn:
+https://www.linkedin.com/in/mlkamalanjali/
+
+---
