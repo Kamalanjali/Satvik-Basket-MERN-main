@@ -9,6 +9,7 @@ import pinoHttp from "pino-http";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import hpp from "hpp";
+import mongoose from "mongoose";
 
 import connectDB from "./config/db.js";
 import "./config/passport.js";
@@ -21,6 +22,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 
 import errorHandler from "./middleware/error.middleware.js";
 import logger from "./utils/logger.js";
+import Sentry from "./config/sentry.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -155,6 +157,20 @@ app.use("/api/v1/payments", paymentRoutes);
 /* ==================================================
    HEALTH CHECK
 ================================================== */
+
+app.get("/health", (req, res) => {
+  const isDbConnected =
+    mongoose.connection.readyState === 1;
+
+  res.status(isDbConnected ? 200 : 503).json({
+    success: isDbConnected,
+    uptime: process.uptime(),
+    database: isDbConnected
+      ? "connected"
+      : "disconnected",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.get("/", (req, res) => {
   res.status(200).json({

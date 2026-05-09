@@ -1,4 +1,5 @@
 import logger from "../utils/logger.js";
+import Sentry from "../config/sentry.js";
 
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
@@ -64,6 +65,10 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Structured error logging
+  if (statusCode >= 500) {
+  Sentry.captureException(err);
+}
+
   logger.error({
     message: err.message,
     statusCode,
