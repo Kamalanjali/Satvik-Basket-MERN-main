@@ -2,27 +2,50 @@ import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
+import asyncHandler from "../utils/asyncHandler.js";
+import AppError from "../utils/AppError.js";
+
 /* ===============================
-   Helper: issue JWT (NO COOKIES)
+   Helper: issue JWT
 ================================ */
-const issueToken = (userId, role, rememberMe = false) => {
+
+const issueToken = (
+  userId,
+  role,
+  rememberMe = false
+) => {
   return jwt.sign(
     { userId, role },
     process.env.JWT_SECRET,
-    { expiresIn: rememberMe ? "30d" : "1h" }
+    {
+      expiresIn: rememberMe ? "30d" : "1h",
+    }
   );
 };
 
 /* ===============================
    Register User
 ================================ */
-export const registerUser = async (req, res, next) => {
-  try {
-    const { name, email, password, rememberMe = false } = req.body;
 
-    const existingUser = await User.findOne({ email });
+export const registerUser = asyncHandler(
+  async (req, res) => {
+    const {
+      name,
+      email,
+      password,
+      rememberMe = false,
+    } = req.body;
+
+    const existingUser = await User.findOne({
+      email,
+    });
+
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      throw new AppError(
+        "User already exists",
+        400,
+        "USER_EXISTS"
+      );
     }
 
     const user = await User.create({
@@ -32,10 +55,15 @@ export const registerUser = async (req, res, next) => {
       provider: "local",
     });
 
-    const token = issueToken(user._id, user.role, rememberMe);
+    const token = issueToken(
+      user._id,
+      user.role,
+      rememberMe
+    );
 
     res.status(201).json({
       success: true,
+      message: "User registered successfully",
       token,
       user: {
         id: user._id,
@@ -44,32 +72,55 @@ export const registerUser = async (req, res, next) => {
         role: user.role,
       },
     });
-  } catch (err) {
-    next(err);
   }
-};
+);
 
 /* ===============================
    Login User
 ================================ */
-export const loginUser = async (req, res, next) => {
-  try {
-    const { email, password, rememberMe = false } = req.body;
 
-    const user = await User.findOne({ email }).select("+password");
+export const loginUser = asyncHandler(
+  async (req, res) => {
+    const {
+      email,
+      password,
+      rememberMe = false,
+    } = req.body;
+
+    const user = await User.findOne({
+      email,
+    }).select("+password");
+
     if (!user || user.provider !== "local") {
-      return res.status(401).json({ message: "Invalid credentials" });
+      throw new AppError(
+        "Invalid credentials",
+        401,
+        "INVALID_CREDENTIALS"
+      );
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      throw new AppError(
+        "Invalid credentials",
+        401,
+        "INVALID_CREDENTIALS"
+      );
     }
 
-    const token = issueToken(user._id, user.role, rememberMe);
+    const token = issueToken(
+      user._id,
+      user.role,
+      rememberMe
+    );
 
     res.status(200).json({
       success: true,
+      message: "Login successful",
       token,
       user: {
         id: user._id,
@@ -78,69 +129,108 @@ export const loginUser = async (req, res, next) => {
         role: user.role,
       },
     });
-  } catch (err) {
-    next(err);
   }
-};
+);
 
 /* ===============================
    Reset Password
 ================================ */
-export const resetPassword = async (req, res, next) => {
-  try {
+
+export const resetPassword = asyncHandler(
+  async (req, res) => {
     const { email, newPassword } = req.body;
 
     const user = await User.findOne({ email });
+
     if (!user || user.provider !== "local") {
-      return res
-        .status(400)
-        .json({ message: "Password reset only for email accounts" });
+      throw new AppError(
+        "Password reset only for email accounts",
+        400,
+        "PASSWORD_RESET_NOT_ALLOWED"
+      );
     }
 
     user.password = newPassword;
+
     await user.save();
 
-    const token = issueToken(user._id, user.role, true);
+    const token = issueToken(
+      user._id,
+      user.role,
+      true
+    );
 
-    res.status(200).json({ success: true, token });
-  } catch (err) {
-    next(err);
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+      token,
+    });
   }
-};
+);
 
 /* ===============================
    Get Logged-in User
 ================================ */
-export const getMe = async (req, res) => {
-  res.status(200).json({
-    success: true,
-    user: req.user,
-  });
-};
+
+export const getMe = asyncHandler(
+  async (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: "User fetched successfully",
+      user: req.user,
+    });
+  }
+);
 
 /* ===============================
-   Logout (CLIENT HANDLED)
+   Logout
 ================================ */
-export const logoutUser = async (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Logged out (client should delete token)",
-  });
-};
+
+export const logoutUser = asyncHandler(
+  async (req, res) => {
+    res.status(200).json({
+      success: true,
+      message:
+        "Logged out successfully",
+    });
+  }
+);
 
 /* ===============================
    Update Profile
 ================================ */
-export const updateMe = async (req, res) => {
-  try {
+
+export const updateMe = asyncHandler(
+  async (req, res) => {
+    const allowedUpdates = [
+      "name",
+      "email",
+       "addresses",
+       "defaultAddress",
+    ];
+
+    const updates = {};
+
+    allowedUpdates.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    });
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      req.body,
-      { new: true, runValidators: true }
+      updates,
+      {
+        new: true,
+        runValidators: true,
+      }
     ).select("-password");
 
-    res.status(200).json({ user });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(200).json({
+      success: true,
+      message:
+        "Profile updated successfully",
+      user,
+    });
   }
-};
+);

@@ -4,6 +4,11 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import passport from "passport";
+import pinoHttp from "pino-http";
+
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import hpp from "hpp";
 
 import connectDB from "./config/db.js";
 import "./config/passport.js";
@@ -15,19 +20,90 @@ import orderRoutes from "./routes/order.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 
 import errorHandler from "./middleware/error.middleware.js";
+import logger from "./utils/logger.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* ---------------- MIDDLEWARE ---------------- */
+/* ==================================================
+   PROCESS LEVEL ERROR HANDLING
+================================================== */
 
-// JSON parser
-app.use(express.json());
+process.on("uncaughtException", (err) => {
+  logger.error(err, "UNCAUGHT EXCEPTION");
+  process.exit(1);
+});
+
+/* ==================================================
+   SECURITY MIDDLEWARE
+================================================== */
+
+// Secure HTTP headers
+app.use(helmet());
+
+// Prevent HTTP Parameter Pollution
+app.use(hpp());
+
+/* ==================================================
+   RATE LIMITING
+================================================== */
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+
+  max: 100,
+
+  message: {
+    success: false,
+    message:
+      "Too many requests from this IP. Please try again later.",
+  },
+
+  standardHeaders: true,
+
+  legacyHeaders: false,
+});
+
+app.use("/api", limiter);
+
+/* ==================================================
+   BODY PARSERS
+================================================== */
+
+// JSON parser with payload limit
+app.use(
+  express.json({
+    limit: "10kb",
+  })
+);
+
+/* ==================================================
+   LOGGER
+================================================== */
+
+// Request logger
+app.use(
+  pinoHttp({
+    logger,
+
+    redact: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+    ],
+  })
+);
+
+/* ==================================================
+   AUTH
+================================================== */
 
 // Passport (JWT strategy only, no sessions)
 app.use(passport.initialize());
 
-// CORS configuration
+/* ==================================================
+   CORS
+================================================== */
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://satvikbasket.vercel.app",
@@ -36,19 +112,39 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow Postman / server-to-server
+      // Allow Postman / server-to-server requests
+      if (!origin) {
+        return callback(null, true);
+      }
+
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
       }
+
+      return callback(
+        new Error("Not allowed by CORS")
+      );
     },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+    ],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
+
+    credentials: true,
   })
 );
 
-/* ---------------- ROUTES ---------------- */
+/* ==================================================
+   ROUTES
+================================================== */
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
@@ -56,7 +152,9 @@ app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 
-/* ---------------- HEALTH CHECK ---------------- */
+/* ==================================================
+   HEALTH CHECK
+================================================== */
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -65,20 +163,70 @@ app.get("/", (req, res) => {
   });
 });
 
-/* ---------------- ERROR HANDLER ---------------- */
+/* ==================================================
+   404 HANDLER
+================================================== */
+
+app.use((req, res, next) => {
+  const error = new Error(
+    `Route not found: ${req.originalUrl}`
+  );
+
+  error.statusCode = 404;
+
+  next(error);
+});
+
+/* ==================================================
+   GLOBAL ERROR HANDLER
+================================================== */
 
 app.use(errorHandler);
 
-/* ---------------- START SERVER ---------------- */
+/* ==================================================
+   START SERVER
+================================================== */
 
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+
+    logger.info("MongoDB connected successfully");
+
+    const server = app.listen(PORT, () => {
+      logger.info(
+        `🚀 Server running on port ${PORT}`
+      );
     });
+
+    /* ----------------------------------------------
+       UNHANDLED PROMISE REJECTIONS
+    ---------------------------------------------- */
+
+    process.on("unhandledRejection", (err) => {
+      logger.error(err, "UNHANDLED REJECTION");
+
+      server.close(() => {
+        process.exit(1);
+      });
+    });
+
+    /* ----------------------------------------------
+       GRACEFUL SHUTDOWN
+    ---------------------------------------------- */
+
+    process.on("SIGTERM", () => {
+      logger.info(
+        "SIGTERM received. Shutting down gracefully..."
+      );
+
+      server.close(() => {
+        logger.info("Process terminated");
+      });
+    });
+
   } catch (error) {
-    console.error("Server failed to start:", error.message);
+    logger.error(error, "Server failed to start");
     process.exit(1);
   }
 };

@@ -13,11 +13,20 @@ import {
 
 import { protect } from "../middleware/auth.middleware.js";
 
+import validate from "../middleware/validations.middleware.js";
+
+import {
+  registerSchema,
+  loginSchema,
+  resetPasswordSchema,
+} from "../schemas/auth.schema.js";
+
 const router = express.Router();
 
 /* ===============================
    GOOGLE OAUTH (TOKEN FLOW)
 ================================ */
+
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -33,29 +42,52 @@ router.get(
   }),
   (req, res) => {
     const token = jwt.sign(
-      { userId: req.user._id, role: req.user.role },
+      {
+        userId: req.user._id,
+        role: req.user.role,
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" }
+      {
+        expiresIn: "30d",
+      }
     );
 
     res.redirect(
-      `${process.env.CLIENT_URL}/oauth-success?token=${token}`);
-    
+      `${process.env.CLIENT_URL}/oauth-success?token=${token}`
+    );
   }
 );
 
 /* ===============================
    LOCAL AUTH
 ================================ */
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/reset-password", resetPassword);
+
+router.post(
+  "/register",
+  validate(registerSchema),
+  registerUser
+);
+
+router.post(
+  "/login",
+  validate(loginSchema),
+  loginUser
+);
+
+router.post(
+  "/reset-password",
+  validate(resetPasswordSchema),
+  resetPassword
+);
 
 /* ===============================
    SESSION (PROTECTED)
 ================================ */
+
 router.get("/me", protect, getMe);
+
 router.put("/me", protect, updateMe);
+
 router.post("/logout", protect, logoutUser);
 
 export default router;
